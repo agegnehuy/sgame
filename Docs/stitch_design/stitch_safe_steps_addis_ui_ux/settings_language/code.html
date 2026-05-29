@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Safe Steps Addis - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&amp;family=Quicksand:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#1e333c",
+                        "tertiary": "#0061a4",
+                        "surface-container-low": "#e6f6ff",
+                        "on-primary-fixed-variant": "#544600",
+                        "surface-container-high": "#d5ecf8",
+                        "on-background": "#071e27",
+                        "on-primary": "#ffffff",
+                        "outline": "#7f775f",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f3faff",
+                        "primary-fixed-dim": "#e9c400",
+                        "surface-bright": "#f3faff",
+                        "on-secondary-container": "#00731e",
+                        "secondary-fixed-dim": "#78dc77",
+                        "on-primary-container": "#705d00",
+                        "inverse-on-surface": "#dff4ff",
+                        "secondary-fixed": "#94f990",
+                        "primary": "#705d00",
+                        "on-tertiary-fixed": "#001d36",
+                        "on-secondary-fixed-variant": "#005313",
+                        "inverse-primary": "#e9c400",
+                        "on-error": "#ffffff",
+                        "secondary": "#006e1c",
+                        "tertiary-fixed": "#d1e4ff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#9ecaff",
+                        "tertiary-container": "#c0dbff",
+                        "outline-variant": "#d0c6ab",
+                        "surface-container-highest": "#cfe6f2",
+                        "error": "#ba1a1a",
+                        "primary-container": "#ffd600",
+                        "background": "#f3faff",
+                        "secondary-container": "#91f78e",
+                        "on-secondary-fixed": "#002204",
+                        "on-surface": "#071e27",
+                        "primary-fixed": "#ffe170",
+                        "on-tertiary-container": "#0061a4",
+                        "surface-variant": "#cfe6f2",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#221b00",
+                        "surface-dim": "#c7dde9",
+                        "on-tertiary-fixed-variant": "#00497d",
+                        "surface-tint": "#705d00",
+                        "surface-container": "#dbf1fe",
+                        "on-surface-variant": "#4d4632"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "lg": "40px",
+                        "xl": "64px",
+                        "md": "24px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Quicksand"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Quicksand"],
+                        "label-lg": ["Quicksand"],
+                        "headline-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "800"}],
+                        "body-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "800"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tactile-button {
+            transition: all 0.1s ease;
+        }
+        .tactile-button:active {
+            transform: translateY(4px);
+            box-shadow: none !important;
+        }
+        .toggle-dot {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        input:checked ~ .toggle-bg {
+            background-color: #006e1c;
+        }
+        input:checked ~ .toggle-dot {
+            transform: translateX(100%);
+        }
+        .inner-recessed {
+            box-shadow: inset 0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .clay-card {
+            box-shadow: 0 8px 0 0 rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-gradient-to-b from-surface-container-low to-surface-container-lowest min-h-screen font-body-md text-on-surface">
+<!-- Top App Bar -->
+<header class="bg-surface dark:bg-surface-container-high shadow-md docked full-width top-0 z-50 border-b-4 border-surface-variant dark:border-outline-variant flex justify-between items-center w-full px-base py-sm max-w-full sticky">
+<div class="flex items-center gap-sm">
+<button class="tactile-button bg-surface-container-highest p-xs rounded-full flex items-center justify-center hover:scale-105 transition-transform active:translate-y-1">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-extrabold text-primary dark:text-primary-fixed">Settings</h1>
+</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+<span class="font-bold text-primary">1,240</span>
+</div>
+</header>
+<main class="max-w-2xl mx-auto px-md py-lg pb-xl space-y-lg">
+<!-- Language Section -->
+<section class="space-y-sm">
+<h2 class="font-headline-md text-headline-md text-tertiary px-xs flex items-center gap-xs">
+<span class="material-symbols-outlined">translate</span> Language Selection
+            </h2>
+<div class="grid grid-cols-2 gap-md">
+<!-- English Option -->
+<button class="tactile-button group relative p-md bg-primary-container rounded-lg border-2 border-primary shadow-[0_6px_0_0_#705d00] flex flex-col items-center justify-center gap-xs hover:bg-surface-bright active:shadow-none">
+<span class="text-headline-md font-bold text-on-primary-container">English</span>
+<span class="material-symbols-outlined text-primary absolute top-2 right-2" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<!-- Amharic Option -->
+<button class="tactile-button group relative p-md bg-surface-container-highest rounded-lg border-2 border-outline-variant shadow-[0_6px_0_0_#d0c6ab] flex flex-col items-center justify-center gap-xs hover:bg-surface-bright active:shadow-none">
+<span class="text-headline-md font-bold text-on-surface-variant">አማርኛ</span>
+</button>
+</div>
+</section>
+<!-- Game Settings Section -->
+<section class="space-y-sm">
+<h2 class="font-headline-md text-headline-md text-tertiary px-xs flex items-center gap-xs">
+<span class="material-symbols-outlined">sports_esports</span> Game Settings
+            </h2>
+<div class="clay-card bg-surface-container-lowest rounded-lg p-md space-y-md border-2 border-surface-variant">
+<!-- Music Toggle -->
+<div class="flex items-center justify-between py-xs">
+<div class="flex items-center gap-md">
+<div class="bg-tertiary-container p-sm rounded-full text-tertiary">
+<span class="material-symbols-outlined">music_note</span>
+</div>
+<div>
+<p class="font-headline-md text-body-lg text-on-surface">Music</p>
+<p class="text-sm text-on-surface-variant">Background game tunes</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="toggle-bg w-14 h-8 bg-surface-dim rounded-full inner-recessed"></div>
+<div class="toggle-dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full shadow-md border-b-2 border-gray-300"></div>
+</label>
+</div>
+<div class="h-px bg-surface-variant w-full"></div>
+<!-- SFX Toggle -->
+<div class="flex items-center justify-between py-xs">
+<div class="flex items-center gap-md">
+<div class="bg-secondary-container p-sm rounded-full text-secondary">
+<span class="material-symbols-outlined">volume_up</span>
+</div>
+<div>
+<p class="font-headline-md text-body-lg text-on-surface">Sound Effects</p>
+<p class="text-sm text-on-surface-variant">Button clicks and alerts</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="toggle-bg w-14 h-8 bg-surface-dim rounded-full inner-recessed"></div>
+<div class="toggle-dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full shadow-md border-b-2 border-gray-300"></div>
+</label>
+</div>
+<div class="h-px bg-surface-variant w-full"></div>
+<!-- Notifications Toggle -->
+<div class="flex items-center justify-between py-xs">
+<div class="flex items-center gap-md">
+<div class="bg-error-container p-sm rounded-full text-error">
+<span class="material-symbols-outlined">notifications</span>
+</div>
+<div>
+<p class="font-headline-md text-body-lg text-on-surface">Notifications</p>
+<p class="text-sm text-on-surface-variant">Stay updated on missions</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="toggle-bg w-14 h-8 bg-surface-dim rounded-full inner-recessed"></div>
+<div class="toggle-dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full shadow-md border-b-2 border-gray-300"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Help & Support Section -->
+<section class="space-y-sm">
+<h2 class="font-headline-md text-headline-md text-tertiary px-xs flex items-center gap-xs">
+<span class="material-symbols-outlined">help_center</span> Help &amp; Support
+            </h2>
+<div class="space-y-sm">
+<!-- FAQ Item -->
+<a class="tactile-button flex items-center justify-between bg-surface-container-high rounded-lg p-md border-b-4 border-outline-variant hover:bg-surface-bright transition-colors" href="#">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-tertiary">quiz</span>
+<span class="font-bold text-on-surface">Safety Guide &amp; FAQ</span>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+<!-- Privacy Item -->
+<a class="tactile-button flex items-center justify-between bg-surface-container-high rounded-lg p-md border-b-4 border-outline-variant hover:bg-surface-bright transition-colors" href="#">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-tertiary">policy</span>
+<span class="font-bold text-on-surface">Privacy Policy</span>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+<!-- Contact Item -->
+<a class="tactile-button flex items-center justify-between bg-surface-container-high rounded-lg p-md border-b-4 border-outline-variant hover:bg-surface-bright transition-colors" href="#">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-tertiary">contact_support</span>
+<span class="font-bold text-on-surface">Contact the Safe Steps Team</span>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+</div>
+</section>
+<!-- Aesthetic Illustration Card -->
+<div class="relative w-full h-48 rounded-lg overflow-hidden clay-card mt-xl">
+<img class="w-full h-full object-cover" data-alt="A vibrant digital illustration of a safe, sun-drenched street in Addis Ababa, designed in a playful 3D cartoon style similar to Toca Boca. The scene features bright colors, rounded architectural shapes, and a high-contrast safety zebra crossing. Warm optimistic lighting glows across the landscape, using a primary palette of yellow and soft blue to evoke a sense of safety and fun for children." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsE-lYbYK62a6G-uTms-7OLoBS-We-bBeVrlVaF-4vGz9Ok3_N4dGngwXuUZ2eNBhkY06zwH7wpHnuz7IgZmrpajlNm8IC9OPPHZEK--FaPqVgG_PycqkOtThSljxlIH5XGItJPcT70vTv9z-gfeEzsLWWJxUpYOCEX0Y7gu_ozec6QcVT1I2JKuSocwiNNsDcsQCNw6I58OKOMeRVMkuKrZnHK1IZZCH8CFqlyGxqyyEpi4PnAKXnXlHkdAqmI8xf3DCxykGRh8wi"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-md">
+<p class="text-white font-bold text-body-lg">Keep Addis Safe, Together!</p>
+</div>
+</div>
+<!-- Logout/Reset Section (Subtle) -->
+<div class="pt-lg flex flex-col items-center gap-sm">
+<button class="text-error font-bold flex items-center gap-xs hover:underline">
+<span class="material-symbols-outlined">logout</span> Log Out Profile
+            </button>
+<p class="text-label-lg text-outline-variant uppercase">Version 1.2.4-Golden</p>
+</div>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-sm pb-base pt-sm bg-surface-container dark:bg-surface-container-highest border-t-4 border-surface-variant dark:border-outline-variant shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-md py-xs hover:bg-surface-bright dark:hover:bg-surface-dim transition-all duration-75" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-lg text-label-lg">Play</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-md py-xs hover:bg-surface-bright dark:hover:bg-surface-dim transition-all duration-75" href="#">
+<span class="material-symbols-outlined">stars</span>
+<span class="font-label-lg text-label-lg">Missions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-md py-xs hover:bg-surface-bright dark:hover:bg-surface-dim transition-all duration-75" href="#">
+<span class="material-symbols-outlined">shopping_basket</span>
+<span class="font-label-lg text-label-lg">Shop</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-md py-xs shadow-[0_4px_0_0_#544600] active:translate-y-0.5 transition-all duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-label-lg text-label-lg">Menu</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for toggles
+        document.querySelectorAll('input[type="checkbox"]').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                // Haptic feedback simulation or sound effect could go here
+                console.log(`${this.parentElement.previousElementSibling.querySelector('p').innerText} toggled: ${this.checked}`);
+            });
+        });
+
+        // Simple animation on page load
+        window.addEventListener('load', () => {
+            const sections = document.querySelectorAll('section');
+            sections.forEach((section, index) => {
+                section.style.opacity = '0';
+                section.style.transform = 'translateY(20px)';
+                section.style.transition = 'all 0.4s ease-out';
+                setTimeout(() => {
+                    section.style.opacity = '1';
+                    section.style.transform = 'translateY(0)';
+                }, 100 * index);
+            });
+        });
+    </script>
+</body></html>

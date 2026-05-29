@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Safe Steps Addis - Feedback</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&amp;family=Quicksand:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+            display: inline-block;
+            line-height: 1;
+        }
+        .clay-button-primary {
+            box-shadow: 0 4px 0 0 #544600;
+        }
+        .clay-button-primary:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 0 #544600;
+        }
+        .clay-card {
+            box-shadow: 0 8px 0 0 rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .floating-animation {
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .star-glow {
+            filter: drop-shadow(0 0 15px rgba(255, 214, 0, 0.6));
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#00497d",
+                        "tertiary": "#0061a4",
+                        "on-error-container": "#93000a",
+                        "background": "#f3faff",
+                        "on-tertiary-fixed": "#001d36",
+                        "surface-container-low": "#e6f6ff",
+                        "tertiary-container": "#c0dbff",
+                        "outline": "#7f775f",
+                        "secondary-container": "#91f78e",
+                        "on-secondary-container": "#00731e",
+                        "on-primary-container": "#705d00",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#d1e4ff",
+                        "inverse-primary": "#e9c400",
+                        "on-primary-fixed": "#221b00",
+                        "surface-container-high": "#d5ecf8",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "primary": "#705d00",
+                        "surface-variant": "#cfe6f2",
+                        "inverse-surface": "#1e333c",
+                        "surface-dim": "#c7dde9",
+                        "primary-fixed-dim": "#e9c400",
+                        "secondary": "#006e1c",
+                        "primary-container": "#ffd600",
+                        "primary-fixed": "#ffe170",
+                        "surface-container-highest": "#cfe6f2",
+                        "tertiary-fixed-dim": "#9ecaff",
+                        "on-secondary-fixed": "#002204",
+                        "on-secondary": "#ffffff",
+                        "on-surface": "#071e27",
+                        "inverse-on-surface": "#dff4ff",
+                        "secondary-fixed-dim": "#78dc77",
+                        "surface-container": "#dbf1fe",
+                        "secondary-fixed": "#94f990",
+                        "outline-variant": "#d0c6ab",
+                        "surface": "#f3faff",
+                        "on-secondary-fixed-variant": "#005313",
+                        "on-surface-variant": "#4d4632",
+                        "on-tertiary-container": "#0061a4",
+                        "on-primary-fixed-variant": "#544600",
+                        "surface-bright": "#f3faff",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#705d00",
+                        "on-background": "#071e27"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "base": "8px",
+                        "sm": "12px",
+                        "md": "24px",
+                        "xl": "64px",
+                        "xs": "4px",
+                        "lg": "40px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Quicksand"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Quicksand"],
+                        "label-lg": ["Quicksand"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "800"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "body-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "800"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body-md text-on-background min-h-screen flex items-center justify-center overflow-hidden">
+<!-- Game Background Simulation (Blurred Content Behind) -->
+<div class="fixed inset-0 z-0">
+<img class="w-full h-full object-cover blur-sm opacity-60" data-alt="A vibrant and bustling city street in Addis Ababa stylized as a 3D cartoon game world. The scene features bright sunshine, colorful buildings with soft rounded edges, and clear pedestrian crossings with zebra stripes. The lighting is warm and cheerful, using a palette of sunny yellows and clear blues to create a friendly, educational atmosphere for children." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqD32NsY-eWO_wS-PGhQdJ2sdhY0gNFZwn26UI-GwpDyVvxsFAEbm2L29zuKBjFyqgXRteLVkyNTVamrQeHwm0EkpYZRhsHcVwXGURLwfDwUVSWijwGmFqHDNlhRRmG20QT-lNxKrEC9xGdeodJHe_lWBKWnSFD3Q-vYA3NnbMgCNArcqUcUOPSyl2A2YU6NQZkKbzL7rQ6vhu9O9ICvaoLfomU8UGhQldQErgTXTDj0qzuFqCJFf6jDZnIE8OGzMvRWholNltNfmN"/>
+<div class="absolute inset-0 bg-on-surface/20 backdrop-blur-md"></div>
+</div>
+<!-- Feedback Overlay Canvas -->
+<main class="relative z-10 w-full max-w-md px-md animate-in fade-in zoom-in duration-300">
+<!-- Feedback Card Container -->
+<div class="clay-card bg-surface-container-lowest rounded-lg overflow-visible flex flex-col items-center text-center p-lg relative border-4 border-surface-variant">
+<!-- Hero Header Bar (Blue Contrast) -->
+<div class="absolute -top-base left-1/2 -translate-x-1/2 bg-tertiary text-on-tertiary px-lg py-sm rounded-full shadow-lg z-20 whitespace-nowrap">
+<span class="font-headline-md text-headline-md">Super Progress!</span>
+</div>
+<!-- Success Character & Star Cluster -->
+<div class="mt-md mb-lg relative">
+<!-- Decorative Glows -->
+<div class="absolute inset-0 bg-primary-container blur-3xl opacity-30 rounded-full scale-150"></div>
+<!-- Main Character -->
+<div class="relative z-10 floating-animation">
+<img class="w-48 h-48 object-contain drop-shadow-xl rounded-full border-8 border-white" data-alt="A friendly, 3D cartoon-style child character with a bright safety helmet and a cheerful smile, giving a confident thumbs up. The character is rendered with soft, tactile textures like a physical toy, set against a sunny Addis Ababa backdrop. The lighting is high-key and optimistic, emphasizing vibrant primary colors and a sense of safety and accomplishment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNCvLdR_XeQ6VaIvxLjguLEn_JOmuqoNtySSNzbzw4LaUZ1dwLmPMahQSlXli0qYqCYrij0vfqOQR6nXZg6w3lliKRMGcoW1ejQ6CTkgbJ5w4R-utMonM2yMwO1qV1xu7FUeyHenPCj_7WVNvqUnn6i67GDnbUBc-9Ff9l0q0nRsxA9x7n0A2R3f0Xhk8ILd2IPHW8OPqjl2EpUFxzbmh8777exeAlqWzyhh7l6P5KSiSEualRABkGGy5-JHMa2x4mRD84iJPpA4tz"/>
+<!-- Star Badge Over character -->
+<div class="absolute -top-xs -right-xs bg-primary-container p-sm rounded-full border-4 border-white shadow-lg star-glow animate-bounce">
+<span class="material-symbols-outlined text-primary text-4xl" data-weight="fill">grade</span>
+</div>
+</div>
+</div>
+<!-- Success Message Content -->
+<div class="space-y-sm mb-lg">
+<div class="inline-flex items-center gap-xs px-md py-xs bg-secondary-container text-on-secondary-container rounded-full font-label-lg text-label-lg mb-xs">
+<span class="material-symbols-outlined text-sm" data-weight="fill">check_circle</span>
+                    MISSION COMPLETE
+                </div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-secondary">Safe Crossing!</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-[280px] mx-auto">
+                    You looked both ways and waited for the light. Excellent safety skills!
+                </p>
+</div>
+<!-- Rewards Mini Bento -->
+<div class="grid grid-cols-2 gap-sm w-full mb-lg">
+<div class="bg-surface-container-high p-sm rounded-lg flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl mb-xs" data-weight="fill">monetization_on</span>
+<span class="font-headline-md text-headline-md text-primary">+50</span>
+<span class="font-label-lg text-label-lg text-on-surface-variant">COINS</span>
+</div>
+<div class="bg-surface-container-high p-sm rounded-lg flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-3xl mb-xs" data-weight="fill">bolt</span>
+<span class="font-headline-md text-headline-md text-tertiary">LVL 4</span>
+<span class="font-label-lg text-label-lg text-on-surface-variant">SAFETY PRO</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="w-full space-y-sm">
+<button class="clay-button-primary w-full bg-primary-container text-on-primary-container py-md px-lg rounded-xl font-headline-md text-headline-md flex items-center justify-center gap-sm transition-all hover:scale-[1.02]">
+                    Continue
+                    <span class="material-symbols-outlined">play_circle</span>
+</button>
+<button class="w-full text-tertiary font-label-lg text-label-lg py-sm transition-opacity hover:opacity-80">
+                    See Mission Details
+                </button>
+</div>
+</div>
+</main>
+<!-- Simple Particle Layer (Scripted) -->
+<canvas class="fixed inset-0 pointer-events-none z-20" id="celebrationCanvas"></canvas>
+<script>
+        // Confetti Effect for Success
+        const canvas = document.getElementById('celebrationCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+        const colors = ['#ffd600', '#006e1c', '#0061a4', '#ffe170'];
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height + 10;
+                this.size = Math.random() * 8 + 4;
+                this.speedY = Math.random() * -5 - 3;
+                this.speedX = Math.random() * 4 - 2;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.rotation = Math.random() * 360;
+                this.spin = Math.random() * 10 - 5;
+            }
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                this.rotation += this.spin;
+                this.speedY += 0.1; // Gravity
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        function initParticles() {
+            for(let i = 0; i < 50; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                if (p.y > canvas.height + 20) {
+                    particles.splice(index, 1);
+                }
+            });
+            requestAnimationFrame(animate);
+        }
+
+        // Start animation on load
+        setTimeout(() => {
+            initParticles();
+            animate();
+        }, 300);
+
+        // Interaction for the primary button
+        document.querySelector('.clay-button-primary').addEventListener('click', () => {
+            document.querySelector('main').classList.add('scale-0', 'opacity-0');
+            setTimeout(() => {
+                alert("Heading back to the city! Stay safe!");
+            }, 300);
+        });
+    </script>
+</body></html>

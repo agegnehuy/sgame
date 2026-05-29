@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&amp;family=Quicksand:wght@500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+        .clay-card {
+            box-shadow: 0 8px 0 0 #cfe6f2, 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .clay-button-primary {
+            box-shadow: 0 4px 0 0 #544600;
+        }
+        .clay-button-secondary {
+            box-shadow: 0 4px 0 0 #005313;
+        }
+        .inner-glow {
+            box-shadow: inset 0 2px 4px 0 rgba(255, 255, 255, 0.3);
+        }
+        .traffic-light-glow-red {
+            filter: drop-shadow(0 0 12px #ba1a1a);
+        }
+        .zebra-pattern {
+            background: repeating-linear-gradient(
+                90deg,
+                #ffffff,
+                #ffffff 40px,
+                #4d4632 40px,
+                #4d4632 80px
+            );
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#00497d",
+                        "tertiary": "#0061a4",
+                        "on-error-container": "#93000a",
+                        "background": "#f3faff",
+                        "on-tertiary-fixed": "#001d36",
+                        "surface-container-low": "#e6f6ff",
+                        "tertiary-container": "#c0dbff",
+                        "outline": "#7f775f",
+                        "secondary-container": "#91f78e",
+                        "on-secondary-container": "#00731e",
+                        "on-primary-container": "#705d00",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#d1e4ff",
+                        "inverse-primary": "#e9c400",
+                        "on-primary-fixed": "#221b00",
+                        "surface-container-high": "#d5ecf8",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "primary": "#705d00",
+                        "surface-variant": "#cfe6f2",
+                        "inverse-surface": "#1e333c",
+                        "surface-dim": "#c7dde9",
+                        "primary-fixed-dim": "#e9c400",
+                        "secondary": "#006e1c",
+                        "primary-container": "#ffd600",
+                        "primary-fixed": "#ffe170",
+                        "surface-container-highest": "#cfe6f2",
+                        "tertiary-fixed-dim": "#9ecaff",
+                        "on-secondary-fixed": "#002204",
+                        "on-secondary": "#ffffff",
+                        "on-surface": "#071e27",
+                        "inverse-on-surface": "#dff4ff",
+                        "secondary-fixed-dim": "#78dc77",
+                        "surface-container": "#dbf1fe",
+                        "secondary-fixed": "#94f990",
+                        "outline-variant": "#d0c6ab",
+                        "surface": "#f3faff",
+                        "on-secondary-fixed-variant": "#005313",
+                        "on-surface-variant": "#4d4632",
+                        "on-tertiary-container": "#0061a4",
+                        "on-primary-fixed-variant": "#544600",
+                        "surface-bright": "#f3faff",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#705d00",
+                        "on-background": "#071e27"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "base": "8px",
+                        "sm": "12px",
+                        "md": "24px",
+                        "xl": "64px",
+                        "xs": "4px",
+                        "lg": "40px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Quicksand"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Quicksand"],
+                        "label-lg": ["Quicksand"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "800"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "body-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "800"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body-md text-on-surface min-h-screen flex flex-col overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-base py-sm max-w-full docked full-width top-0 bg-surface shadow-md border-b-4 border-surface-variant z-40">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary shadow-sm hover:scale-105 transition-transform cursor-pointer">
+<img alt="Kid player avatar" data-alt="A friendly and cheerful cartoon 3D avatar of a child wearing a bright yellow safety helmet and a blue shirt. The style is soft, tactile, and clay-morphic, consistent with high-end mobile game UI. The lighting is warm and sunny, set against a vibrant yellow background that matches the primary brand colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLrWBDXJqRElEeLbBXtISnfod-1hxXHAsVNHT0FPcQPcR3iQJfAYsvHQCAxF-FWAzeq5W77O0vGPCI4JVtyN4ozs91tJ9uM-P37UczH6bilXu7oKOhlF3fpOkggabcAKvGJI5mRSTGiw5JIt7x7r0KJdsrcSZu34BnynQPJzO58RDNVj-4nYdZuj0Qf0DOmtd5cvVLq3G7oRdo-yaKPM8FpJUfgWafQgMJAZ8xc0O_621xj3avX9DM-5t1FEFtDPd34StOTkuyCqxx"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-extrabold text-primary">Safe Steps Addis</h1>
+</div>
+<div class="flex items-center gap-xs bg-primary-container px-sm py-xs rounded-full clay-button-primary hover:scale-105 transition-transform cursor-pointer active:translate-y-1 active:shadow-none">
+<span class="material-symbols-outlined text-on-primary-container" data-icon="monetization_on">monetization_on</span>
+<span class="font-label-lg text-on-primary-container">1,250</span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col items-center justify-center px-md py-xl mb-32">
+<!-- Mission Briefing Card -->
+<div class="w-full max-w-lg bg-surface-container-lowest rounded-lg clay-card p-md relative overflow-hidden flex flex-col gap-md">
+<!-- Card Header Badge -->
+<div class="absolute -top-1 -right-1 bg-secondary-container text-on-secondary-container px-lg py-xs rounded-bl-lg font-label-lg shadow-sm border-b-2 border-l-2 border-secondary">
+                NEW MISSION
+            </div>
+<!-- Illustration Section -->
+<div class="w-full bg-tertiary-container rounded-lg p-md flex flex-col items-center justify-center gap-md relative min-h-[240px]">
+<!-- Traffic Light -->
+<div class="flex gap-md bg-on-surface-variant p-sm rounded-xl shadow-inner border-2 border-outline-variant">
+<div class="w-10 h-10 rounded-full bg-error traffic-light-glow-red border-2 border-white/20"></div>
+<div class="w-10 h-10 rounded-full bg-surface-variant opacity-40"></div>
+<div class="w-10 h-10 rounded-full bg-surface-variant opacity-40"></div>
+</div>
+<!-- Crossing Graphics -->
+<div class="w-full h-24 zebra-pattern rounded-md shadow-inner border-y-4 border-outline-variant flex items-center justify-center">
+<img alt="Child character" class="h-20 drop-shadow-md" data-alt="A small 3D cartoon child character with a happy expression, standing in a dynamic walking pose. The character has stylized features and vibrant blue clothing. The overall aesthetic is friendly and safe, rendered in a soft-textured digital style typical of educational apps for children, emphasizing a warm and positive Addis Ababa city atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBomqVj6yMZ3bxAN67c2SL_qTsZfvEc-6QbuaiH-6P3oxIb076Mxn9JRDKxtfC1V5rUdDB0fzmOqP4noWm6rNee3Kt4wRAX-APauMDiWubDCjw7XFahDIkYscxOE9A0O1xs0zIHzfLWi28A-D7CHm73h3WeP1XAg03jLlWzT3oalkbZhA9KFIv8MsN-QX3-qr32rcYaFg-q-k_I_IksdZkrFWSSq0spkoObSui6WJxQDnE0MWV5Mfu1L7arWsJIti4m9fnLFKHGd2fZ"/>
+</div>
+</div>
+<!-- Content Section -->
+<div class="text-center space-y-sm">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight">Mission: Cross the Road!</h2>
+<div class="bg-surface-container rounded-xl p-md border-2 border-dashed border-primary/30">
+<p class="font-body-lg text-body-lg text-on-surface-variant italic">
+                        "Remember the Addis Safety Rule:"
+                    </p>
+<p class="font-headline-md text-headline-md text-primary mt-xs">
+                        Wait on Green and Yellow,<br/>
+<span class="text-error font-extrabold uppercase">Cross on Red!</span>
+</p>
+</div>
+</div>
+<!-- Mission Details -->
+<div class="grid grid-cols-2 gap-sm">
+<div class="flex items-center gap-xs bg-surface p-sm rounded-xl border border-outline-variant">
+<span class="material-symbols-outlined text-secondary" data-icon="stars" style="font-variation-settings: 'FILL' 1;">stars</span>
+<div>
+<p class="text-[10px] font-bold text-on-surface-variant leading-none uppercase">Reward</p>
+<p class="font-label-lg text-on-surface">50 XP</p>
+</div>
+</div>
+<div class="flex items-center gap-xs bg-surface p-sm rounded-xl border border-outline-variant">
+<span class="material-symbols-outlined text-tertiary" data-icon="timer">timer</span>
+<div>
+<p class="text-[10px] font-bold text-on-surface-variant leading-none uppercase">Time</p>
+<p class="font-label-lg text-on-surface">2 Mins</p>
+</div>
+</div>
+</div>
+<!-- Start Button -->
+<button class="w-full bg-primary-container text-on-primary-container font-headline-md text-headline-md py-md rounded-full clay-button-primary hover:scale-105 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-sm mt-md">
+<span>Start Mission</span>
+<span class="material-symbols-outlined" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+</div>
+<!-- Decorative Elements -->
+<div class="fixed top-20 left-4 -z-10 opacity-20 pointer-events-none transform -rotate-12">
+<span class="material-symbols-outlined text-[120px] text-primary" data-icon="traffic">traffic</span>
+</div>
+<div class="fixed bottom-32 right-4 -z-10 opacity-20 pointer-events-none transform rotate-12">
+<span class="material-symbols-outlined text-[120px] text-secondary" data-icon="directions_walk">directions_walk</span>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-sm pb-base pt-sm bg-surface-container dark:bg-surface-container-highest border-t-4 border-surface-variant shadow-lg rounded-t-lg">
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-md py-xs hover:bg-surface-bright transition-all group">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="map">map</span>
+<span class="font-label-lg text-label-lg">Play</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-md py-xs shadow-[0_4px_0_0_#544600] active:translate-y-0.5 transition-all">
+<span class="material-symbols-outlined" data-icon="stars" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-label-lg text-label-lg">Missions</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-md py-xs hover:bg-surface-bright transition-all group">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="shopping_basket">shopping_basket</span>
+<span class="font-label-lg text-label-lg">Shop</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-md py-xs hover:bg-surface-bright transition-all group">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="grid_view">grid_view</span>
+<span class="font-label-lg text-label-lg">Menu</span>
+</button>
+</nav>
+<script>
+        // Simple micro-interaction for the traffic light
+        let activeLight = 0;
+        const lights = document.querySelectorAll('.traffic-light-glow-red, .w-10.h-10.rounded-full');
+        
+        setInterval(() => {
+            lights.forEach((l, idx) => {
+                if (idx === 0) { // Red light (index 0)
+                    l.style.opacity = '1';
+                    l.classList.add('traffic-light-glow-red');
+                } else {
+                    l.style.opacity = '0.4';
+                    l.classList.remove('traffic-light-glow-red');
+                }
+            });
+        }, 2000);
+
+        // Add haptic-like bounce to primary button
+        const startBtn = document.querySelector('button.bg-primary-container');
+        startBtn.addEventListener('click', () => {
+            startBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                startBtn.style.transform = 'scale(1)';
+                // Logic to transition to mission start would go here
+            }, 100);
+        });
+    </script>
+</body></html>

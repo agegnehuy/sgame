@@ -1,0 +1,82 @@
+{
+  "language": "am",
+  "entries": [
+    { "key": "mission.p1m1.title", "value": "የምልክት መሰረታዊ" },
+    { "key": "mission.p1m1.briefing", "value": "አረንጓዴ እስኪሆን ድረስ ጠብቅ ከዚያ በደህና ተሻገር።" },
+    { "key": "mission.p1m2.title", "value": "የመጠበቅ ትኩረት" },
+    { "key": "mission.p1m2.briefing", "value": "የምልክት መቀየር ጊዜ አደገኛ ሲሆን አትሻገር።" },
+    { "key": "mission.p1m3.title", "value": "ሁለት-ደረጃ መሻገር" },
+    { "key": "mission.p1m3.briefing", "value": "በደህና እርምጃዎች ተሻገር እና ሲያስፈልግ ቆም።" },
+    { "key": "mission.p1m4.title", "value": "የመታለል መቆጣጠር" },
+    { "key": "mission.p1m4.briefing", "value": "መታለልን ተው እና የደህንነት ምልክቶችን ተከተል።" },
+    { "key": "mission.p1m5.title", "value": "የትምህርት ቤት ጭንቀት ፈተና" },
+    { "key": "mission.p1m5.briefing", "value": "በጫና ሁኔታ ሁሉንም የመሻገር ክህሎቶች ተግብር።" },
+    { "key": "ui.action.wait", "value": "ጠብቅ" },
+    { "key": "ui.action.cross", "value": "ተሻገር" },
+    { "key": "feedback.safe.cross_now", "value": "ጥሩ ውሳኔ። አሁን ተሻገር።" },
+    { "key": "feedback.unsafe.red_light", "value": "አደገኛ ነው። የእግረኛ መብራቱ ቀይ ነው።" },
+    { "key": "feedback.unsafe.vehicle_close", "value": "አደገኛ ነው። ተሽከርካሪ በጣም ቅርብ ነው።" },
+    { "key": "feedback.unsafe.no_crosswalk", "value": "የመሻገሪያ መስመሩን ተጠቀም።" },
+    { "key": "feedback.info.wait", "value": "ጥሩ። መጠበቅ የበለጠ ደህንነት ነው።" },
+    { "key": "feedback.info.distraction", "value": "ትኩረትህን ጠብቅ። ማታለያዎችን ተው እና ምልክቱን አረጋግጥ።" },
+    { "key": "feedback.info.pressure_start", "value": "ትራፊኩ እየበዛ ነው። አሁን ይበልጥ ተጠንቀቅ።" },
+    { "key": "feedback.info.pressure_end", "value": "የትራፊክ ጫና ቀንሷል። እንደገና በደህና ውሳኔ አድርግ።" },
+    { "key": "result.pass", "value": "ተልዕኮው ተጠናቀቀ።" },
+    { "key": "result.retry", "value": "ድጋሚ ሞክር።" },
+    { "key": "ui.progress.best_prefix", "value": "ምርጥ: " },
+    { "key": "ui.progress.stars_prefix", "value": "ኮከቦች: " },
+    { "key": "ui.progress.attempts_prefix", "value": "ሙከራዎች: " },
+    { "key": "ui.progress.unlocked", "value": "ተከፍቷል" },
+    { "key": "ui.progress.locked", "value": "ተዘግቷል" },
+    { "key": "ui.export.report_saved", "value": "ሪፖርት ተቀምጧል:" },
+    { "key": "ui.export.report_failed", "value": "ሪፖርቱን ማውጣት አልተሳካም።" },
+    { "key": "ui.export.analytics_saved", "value": "የትንተና ማጠቃለያ ተቀምጧል:" },
+    { "key": "ui.export.analytics_failed", "value": "የትንተና ማጠቃለያን ማውጣት አልተሳካም።" },
+    { "key": "ui.coins.prefix", "value": "ሳንቲሞች: " },
+    { "key": "ui.total.prefix", "value": "ጠቅላላ: " },
+    { "key": "ui.score.prefix", "value": "ነጥብ: " },
+    { "key": "ui.score.stars_prefix", "value": " | ኮከቦች: " },
+    { "key": "ui.score.stars_prefix_short", "value": "ኮከቦች: " },
+    { "key": "ui.score.coins_suffix", "value": " ሳንቲሞች" },
+    { "key": "ui.feedback.safe", "value": "ደህንነት" },
+    { "key": "ui.feedback.unsafe", "value": "አደገኛ" },
+    { "key": "ui.store.owned", "value": "የተገዛ" },
+    { "key": "ui.store.cost_prefix", "value": "ዋጋ: " },
+    { "key": "ui.store.tap_to_equip", "value": "ለመልበስ ንካ" },
+    { "key": "ui.store.tap_to_buy", "value": "ለመግዛት ንካ" },
+    { "key": "ui.store.not_enough", "value": "በቂ ሳንቲም የለም" },
+    { "key": "ui.store.purchased_left", "value": "ተገዝቷል ({0} ቀርቷል)" },
+    { "key": "ui.store.equipped", "value": "ተለብሷል" },
+    { "key": "ui.mission.unlocked", "value": "ተልዕኮ" },
+    { "key": "ui.mission.locked", "value": "ተዘግቷል" },
+    { "key": "ui.common.none", "value": "ምንም የለም" },
+    { "key": "ui.language.current.en", "value": "ቋንቋ: እንግሊዝኛ" },
+    { "key": "ui.language.current.am", "value": "ቋንቋ: አማርኛ" },
+    { "key": "ui.language.button.en", "value": "እንግሊዝኛ" },
+    { "key": "ui.language.button.am", "value": "አማርኛ" },
+    { "key": "ui.debug.localization_refreshed", "value": "የትርጉም UI ታድሷል" }
+    ,{ "key": "ui.analytics.total_decisions", "value": "ጠቅላላ ውሳኔዎች: " }
+    ,{ "key": "ui.analytics.safe_ratio", "value": "የደህንነት መጠን: " }
+    ,{ "key": "ui.analytics.top_mission", "value": "ምርጥ ተልዕኮ: " }
+    ,{ "key": "ui.analytics.challenge_events", "value": "የተጨናነቀ ክስተቶች: " }
+    ,{ "key": "ui.analytics.mission_count", "value": "የተጫወቱ ተልዕኮዎች: " }
+    ,{ "key": "ui.analytics.no_data", "value": "ውሂብ የለም" }
+    ,{ "key": "ui.facilitator.open", "value": "የአስተባባሪ ፓነል ክፈት" }
+    ,{ "key": "ui.facilitator.close", "value": "የአስተባባሪ ፓነል ዝጋ" }
+    ,{ "key": "ui.facilitator.title", "value": "የአስተባባሪ ዳሽቦርድ" }
+    ,{ "key": "ui.facilitator.pin_prompt", "value": "የአስተባባሪ ፒን አስገባ" }
+    ,{ "key": "ui.facilitator.pin_invalid", "value": "የተሳሳተ ፒን" }
+    ,{ "key": "ui.facilitator.pin_locked", "value": "ብዙ ሙከራ ተደርጓል። በ{0} ሰከንድ በኋላ ደግም ሞክር" }
+    ,{ "key": "ui.facilitator.pin_attempts_left", "value": "የተሳሳተ ፒን። የቀሩ ሙከራዎች: {0}" }
+    ,{ "key": "ui.facilitator.pin_cooldown", "value": "እባክህ {0} ሰከንድ ጠብቅ ከዚያ እንደገና ሞክር" }
+    ,{ "key": "ui.facilitator.pin_state_ready", "value": "ደህንነት: ዝግጁ" }
+    ,{ "key": "ui.facilitator.pin_state_cooldown", "value": "ደህንነት: መጠበቅ ({0}ሰ)" }
+    ,{ "key": "ui.facilitator.pin_state_lockout", "value": "ደህንነት: ተቆልፏል ({0}ሰ)" }
+    ,{ "key": "ui.maintenance.cleared_analytics", "value": "የትንተና መዝገቦች ተሰርዘዋል: {0}" }
+    ,{ "key": "ui.maintenance.cleared_exports", "value": "የኤክስፖርት ፋይሎች ተሰርዘዋል: {0}" }
+    ,{ "key": "ui.maintenance.cleared_pin_audit", "value": "የፒን ኦዲት መዝገቦች ተሰርዘዋል: {0}" }
+    ,{ "key": "ui.maintenance.reset_done", "value": "የንቁ መለያ ሂደት ተዳግሟል።" }
+    ,{ "key": "ui.maintenance.reset_confirm", "value": "ለማረጋገጥ እንደገና የዳግም ቁልፍን ጫን።" }
+    ,{ "key": "ui.maintenance.reset_timeout", "value": "የዳግም ማረጋገጫ ጊዜው አልፏል።" }
+  ]
+}

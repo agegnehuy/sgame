@@ -1,0 +1,82 @@
+{
+  "language": "en",
+  "entries": [
+    { "key": "mission.p1m1.title", "value": "Signal Basics" },
+    { "key": "mission.p1m1.briefing", "value": "Wait for green then cross safely." },
+    { "key": "mission.p1m2.title", "value": "Wait Discipline" },
+    { "key": "mission.p1m2.briefing", "value": "Do not cross during unsafe signal changes." },
+    { "key": "mission.p1m3.title", "value": "Two-Stage Crossing" },
+    { "key": "mission.p1m3.briefing", "value": "Cross in safe steps and pause when needed." },
+    { "key": "mission.p1m4.title", "value": "Distraction Control" },
+    { "key": "mission.p1m4.briefing", "value": "Ignore distractions and follow safety signals." },
+    { "key": "mission.p1m5.title", "value": "School Rush Challenge" },
+    { "key": "mission.p1m5.briefing", "value": "Apply all crossing skills under pressure." },
+    { "key": "ui.action.wait", "value": "Wait" },
+    { "key": "ui.action.cross", "value": "Cross" },
+    { "key": "feedback.safe.cross_now", "value": "Good choice. Cross now." },
+    { "key": "feedback.unsafe.red_light", "value": "Unsafe. The pedestrian light is red." },
+    { "key": "feedback.unsafe.vehicle_close", "value": "Unsafe. A vehicle is too close." },
+    { "key": "feedback.unsafe.no_crosswalk", "value": "Use the crosswalk area." },
+    { "key": "feedback.info.wait", "value": "Good. Waiting is safer." },
+    { "key": "feedback.info.distraction", "value": "Stay focused. Ignore distractions and check the signal." },
+    { "key": "feedback.info.pressure_start", "value": "Traffic is getting busy. Be extra careful now." },
+    { "key": "feedback.info.pressure_end", "value": "Traffic pressure reduced. Keep making safe decisions." },
+    { "key": "result.pass", "value": "Mission complete." },
+    { "key": "result.retry", "value": "Try again." },
+    { "key": "ui.progress.best_prefix", "value": "Best: " },
+    { "key": "ui.progress.stars_prefix", "value": "Stars: " },
+    { "key": "ui.progress.attempts_prefix", "value": "Attempts: " },
+    { "key": "ui.progress.unlocked", "value": "Unlocked" },
+    { "key": "ui.progress.locked", "value": "Locked" },
+    { "key": "ui.export.report_saved", "value": "Report saved:" },
+    { "key": "ui.export.report_failed", "value": "Failed to export report." },
+    { "key": "ui.export.analytics_saved", "value": "Analytics summary saved:" },
+    { "key": "ui.export.analytics_failed", "value": "Failed to export analytics summary." },
+    { "key": "ui.coins.prefix", "value": "Coins: " },
+    { "key": "ui.total.prefix", "value": "Total: " },
+    { "key": "ui.score.prefix", "value": "Score: " },
+    { "key": "ui.score.stars_prefix", "value": " | Stars: " },
+    { "key": "ui.score.stars_prefix_short", "value": "Stars: " },
+    { "key": "ui.score.coins_suffix", "value": " coins" },
+    { "key": "ui.feedback.safe", "value": "SAFE" },
+    { "key": "ui.feedback.unsafe", "value": "UNSAFE" },
+    { "key": "ui.store.owned", "value": "Owned" },
+    { "key": "ui.store.cost_prefix", "value": "Cost: " },
+    { "key": "ui.store.tap_to_equip", "value": "Tap to Equip" },
+    { "key": "ui.store.tap_to_buy", "value": "Tap to Buy" },
+    { "key": "ui.store.not_enough", "value": "Not enough coins" },
+    { "key": "ui.store.purchased_left", "value": "Purchased ({0} left)" },
+    { "key": "ui.store.equipped", "value": "Equipped" },
+    { "key": "ui.mission.unlocked", "value": "Mission" },
+    { "key": "ui.mission.locked", "value": "Locked" },
+    { "key": "ui.common.none", "value": "None" },
+    { "key": "ui.language.current.en", "value": "Language: English" },
+    { "key": "ui.language.current.am", "value": "Language: Amharic" },
+    { "key": "ui.language.button.en", "value": "English" },
+    { "key": "ui.language.button.am", "value": "Amharic" },
+    { "key": "ui.debug.localization_refreshed", "value": "Localized UI refreshed" }
+    ,{ "key": "ui.analytics.total_decisions", "value": "Total decisions: " }
+    ,{ "key": "ui.analytics.safe_ratio", "value": "Safe ratio: " }
+    ,{ "key": "ui.analytics.top_mission", "value": "Top mission: " }
+    ,{ "key": "ui.analytics.challenge_events", "value": "Challenge events: " }
+    ,{ "key": "ui.analytics.mission_count", "value": "Missions played: " }
+    ,{ "key": "ui.analytics.no_data", "value": "No data" }
+    ,{ "key": "ui.facilitator.open", "value": "Open Facilitator Panel" }
+    ,{ "key": "ui.facilitator.close", "value": "Close Facilitator Panel" }
+    ,{ "key": "ui.facilitator.title", "value": "Facilitator Dashboard" }
+    ,{ "key": "ui.facilitator.pin_prompt", "value": "Enter facilitator PIN" }
+    ,{ "key": "ui.facilitator.pin_invalid", "value": "Incorrect PIN" }
+    ,{ "key": "ui.facilitator.pin_locked", "value": "Too many attempts. Try again in {0}s" }
+    ,{ "key": "ui.facilitator.pin_attempts_left", "value": "Incorrect PIN. Attempts left: {0}" }
+    ,{ "key": "ui.facilitator.pin_cooldown", "value": "Please wait {0}s before trying again" }
+    ,{ "key": "ui.facilitator.pin_state_ready", "value": "Security: Ready" }
+    ,{ "key": "ui.facilitator.pin_state_cooldown", "value": "Security: Cooldown ({0}s)" }
+    ,{ "key": "ui.facilitator.pin_state_lockout", "value": "Security: Locked ({0}s)" }
+    ,{ "key": "ui.maintenance.cleared_analytics", "value": "Analytics logs cleared: {0}" }
+    ,{ "key": "ui.maintenance.cleared_exports", "value": "Export files cleared: {0}" }
+    ,{ "key": "ui.maintenance.cleared_pin_audit", "value": "PIN audit logs cleared: {0}" }
+    ,{ "key": "ui.maintenance.reset_done", "value": "Active profile progress reset." }
+    ,{ "key": "ui.maintenance.reset_confirm", "value": "Press reset again to confirm." }
+    ,{ "key": "ui.maintenance.reset_timeout", "value": "Reset confirmation expired." }
+  ]
+}

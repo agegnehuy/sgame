@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mission Complete - Safe Steps Addis</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&amp;family=Quicksand:wght@500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        .tactile-shadow-primary {
+            box-shadow: 0 6px 0 0 #544600;
+        }
+        .tactile-shadow-secondary {
+            box-shadow: 0 6px 0 0 #005313;
+        }
+        .tactile-shadow-tertiary {
+            box-shadow: 0 6px 0 0 #00497d;
+        }
+        .press-effect:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        .sparkle {
+            position: absolute;
+            animation: sparkle 1.5s infinite;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#00497d",
+                        "tertiary": "#0061a4",
+                        "on-error-container": "#93000a",
+                        "background": "#f3faff",
+                        "on-tertiary-fixed": "#001d36",
+                        "surface-container-low": "#e6f6ff",
+                        "tertiary-container": "#c0dbff",
+                        "outline": "#7f775f",
+                        "secondary-container": "#91f78e",
+                        "on-secondary-container": "#00731e",
+                        "on-primary-container": "#705d00",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#d1e4ff",
+                        "inverse-primary": "#e9c400",
+                        "on-primary-fixed": "#221b00",
+                        "surface-container-high": "#d5ecf8",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "primary": "#705d00",
+                        "surface-variant": "#cfe6f2",
+                        "inverse-surface": "#1e333c",
+                        "surface-dim": "#c7dde9",
+                        "primary-fixed-dim": "#e9c400",
+                        "secondary": "#006e1c",
+                        "primary-container": "#ffd600",
+                        "primary-fixed": "#ffe170",
+                        "surface-container-highest": "#cfe6f2",
+                        "tertiary-fixed-dim": "#9ecaff",
+                        "on-secondary-fixed": "#002204",
+                        "on-secondary": "#ffffff",
+                        "on-surface": "#071e27",
+                        "inverse-on-surface": "#dff4ff",
+                        "secondary-fixed-dim": "#78dc77",
+                        "surface-container": "#dbf1fe",
+                        "secondary-fixed": "#94f990",
+                        "outline-variant": "#d0c6ab",
+                        "surface": "#f3faff",
+                        "on-secondary-fixed-variant": "#005313",
+                        "on-surface-variant": "#4d4632",
+                        "on-tertiary-container": "#0061a4",
+                        "on-primary-fixed-variant": "#544600",
+                        "surface-bright": "#f3faff",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#705d00",
+                        "on-background": "#071e27"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "base": "8px",
+                        "sm": "12px",
+                        "md": "24px",
+                        "xl": "64px",
+                        "xs": "4px",
+                        "lg": "40px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Quicksand"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Quicksand"],
+                        "label-lg": ["Quicksand"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "800"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "body-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "800"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body-md text-on-background overflow-x-hidden pb-32">
+<!-- Top App Bar -->
+<header class="flex justify-between items-center w-full px-base py-sm max-w-full docked full-width top-0 bg-surface dark:bg-surface-container-high border-b-4 border-surface-variant dark:border-outline-variant shadow-md z-40 sticky">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary-container">
+<img alt="Kid avatar" data-alt="A cheerful 3D cartoon avatar of a child wearing a bright yellow safety helmet and protective goggles. The character has a wide, happy smile and is set against a clean, soft blue background that matches a child-friendly educational app aesthetic. The lighting is bright and optimistic, emphasizing a fun and safe learning environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeWQcTFPtubS6m5-8GU8PizLB6dfsslLIqBVNLvShyoXnQ6r6wbQ0lQEfCYsaXM6_1VN_ONO_d4z1RN17hAGrY8D_zvl4qQPXgJ699YcKOBsfcM1tuwNESeEAdcQF6IGetgle5y0ZGamBmG105dC4upey--THNVm9vXHEs-bmMAuAvvFtImX-jdX_gTBrSMxNZ-6oVdmYM8Nfbp8946d_0N8WgbMeNTzY9dqeRyWrR_u2Lui8pfq2BX7tdZuWUchDdTwjIXCi5bBUJ"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-extrabold text-primary dark:text-primary-fixed">Safe Steps Addis</h1>
+</div>
+<div class="flex items-center bg-primary-container text-on-primary-container px-sm py-xs rounded-full shadow-sm hover:scale-105 transition-transform active:translate-y-1 active:shadow-none cursor-pointer">
+<span class="material-symbols-outlined mr-1 filled-icon" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+<span class="font-bold">1,250</span>
+</div>
+</header>
+<main class="max-w-md mx-auto px-base pt-lg relative">
+<!-- Confetti Particles (Animated) -->
+<div class="absolute inset-0 pointer-events-none overflow-hidden h-[600px]" id="confetti-container">
+<!-- Sparkle elements generated by JS -->
+</div>
+<!-- Success Header Card -->
+<section class="relative z-10 text-center mb-lg">
+<div class="inline-block bg-secondary-container text-on-secondary-container px-lg py-sm rounded-xl tactile-shadow-secondary animate-float mb-md">
+<span class="font-headline-md text-headline-md">AMAZING JOB!</span>
+</div>
+<p class="font-headline-lg-mobile text-headline-lg-mobile text-primary leading-tight">
+                You crossed Bole Road <br/> like a pro!
+            </p>
+</section>
+<!-- Star Rating Section -->
+<section class="bg-surface-container-lowest rounded-lg p-md shadow-lg border-2 border-surface-variant relative mb-md">
+<div class="flex justify-center gap-sm -mt-12 mb-sm">
+<!-- Stars -->
+<div class="w-20 h-20 bg-primary-container rounded-full flex items-center justify-center tactile-shadow-primary border-4 border-white rotate-[-12deg]">
+<span class="material-symbols-outlined text-4xl text-on-primary-container filled-icon" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="w-24 h-24 bg-primary-container rounded-full flex items-center justify-center tactile-shadow-primary border-4 border-white scale-110 relative z-10">
+<span class="material-symbols-outlined text-5xl text-on-primary-container filled-icon" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="w-20 h-20 bg-primary-container rounded-full flex items-center justify-center tactile-shadow-primary border-4 border-white rotate-[12deg]">
+<span class="material-symbols-outlined text-4xl text-on-primary-container filled-icon" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<div class="text-center space-y-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Mission Summary</h2>
+<div class="grid grid-cols-2 gap-sm">
+<!-- Safety Score Card -->
+<div class="bg-surface-container rounded-lg p-sm border-2 border-surface-variant text-center">
+<span class="text-label-lg font-label-lg text-on-surface-variant block">Safety Score</span>
+<div class="flex items-center justify-center gap-xs mt-xs">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-secondary">98%</span>
+</div>
+<div class="w-full bg-surface-variant h-3 rounded-full mt-xs overflow-hidden">
+<div class="bg-secondary h-full" style="width: 98%"></div>
+</div>
+</div>
+<!-- Coins Earned Card -->
+<div class="bg-surface-container rounded-lg p-sm border-2 border-surface-variant text-center">
+<span class="text-label-lg font-label-lg text-on-surface-variant block">Bonus Coins</span>
+<div class="flex items-center justify-center gap-xs mt-xs">
+<span class="material-symbols-outlined text-primary filled-icon" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary">+150</span>
+</div>
+</div>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant px-sm py-xs bg-surface-container-low rounded-lg italic">
+                    "You remembered to look both ways before crossing and stayed on the zebra line. Safety Champion!"
+                </p>
+</div>
+</section>
+<!-- Details Bento Grid -->
+<section class="grid grid-cols-1 gap-sm mb-xl">
+<div class="bg-tertiary-container rounded-lg p-md border-2 border-outline-variant flex items-center gap-md">
+<div class="bg-on-tertiary w-14 h-14 rounded-full flex items-center justify-center shadow-inner">
+<span class="material-symbols-outlined text-tertiary text-3xl">verified</span>
+</div>
+<div>
+<h3 class="font-label-lg text-label-lg text-on-tertiary-fixed-variant">ACHIEVEMENT UNLOCKED</h3>
+<p class="font-headline-md text-headline-md text-tertiary leading-tight">Road Master</p>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-md pt-base">
+<button class="w-full bg-primary-container text-on-primary-container font-headline-md text-headline-md py-md rounded-xl tactile-shadow-primary press-effect border-2 border-white">
+                    Next Mission
+                </button>
+<button class="w-full bg-surface-container-highest text-on-surface-variant font-label-lg text-label-lg py-sm rounded-xl border-2 border-outline-variant hover:bg-surface-bright active:translate-y-0.5 transition-all">
+                    Play Again
+                </button>
+</div>
+</section>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-sm pb-base pt-sm bg-surface-container dark:bg-surface-container-highest border-t-4 border-surface-variant dark:border-outline-variant shadow-lg rounded-t-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-md py-xs hover:bg-surface-bright dark:hover:bg-surface-dim transition-all duration-75 active:translate-y-0.5" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-lg text-label-lg">Play</span>
+</a>
+<!-- Active Tab: Missions -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-md py-xs shadow-[0_4px_0_0_#544600] active:translate-y-0.5 transition-all duration-75" href="#">
+<span class="material-symbols-outlined filled-icon" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-label-lg text-label-lg">Missions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-md py-xs hover:bg-surface-bright dark:hover:bg-surface-dim transition-all duration-75 active:translate-y-0.5" href="#">
+<span class="material-symbols-outlined">shopping_basket</span>
+<span class="font-label-lg text-label-lg">Shop</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-md py-xs hover:bg-surface-bright dark:hover:bg-surface-dim transition-all duration-75 active:translate-y-0.5" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label-lg text-label-lg">Menu</span>
+</a>
+</nav>
+<script>
+        // Simple confetti/sparkle generator
+        const container = document.getElementById('confetti-container');
+        const colors = ['#ffd600', '#91f78e', '#c0dbff', '#ffffff'];
+        
+        function createSparkle() {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            const size = Math.random() * 10 + 5;
+            const left = Math.random() * 100;
+            const top = Math.random() * 80;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            sparkle.style.width = `${size}px`;
+            sparkle.style.height = `${size}px`;
+            sparkle.style.left = `${left}%`;
+            sparkle.style.top = `${top}%`;
+            sparkle.style.backgroundColor = color;
+            sparkle.style.borderRadius = '50%';
+            sparkle.style.animationDelay = `${Math.random() * 2}s`;
+            
+            container.appendChild(sparkle);
+            
+            setTimeout(() => {
+                sparkle.remove();
+            }, 1500);
+        }
+
+        // Initial burst
+        for(let i = 0; i < 20; i++) {
+            setTimeout(createSparkle, i * 50);
+        }
+
+        // Continuous sparkles
+        setInterval(createSparkle, 300);
+    </script>
+</body></html>

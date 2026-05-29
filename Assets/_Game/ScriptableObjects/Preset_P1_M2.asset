@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a2b3c4d1e2f3a4b1c2d3e4f1a2b3c40, type: 3}
+  m_Name: P1-M2
+  m_EditorClassIdentifier:
+  missionId: P1-M2
+  missionSceneName: P1_M1
+  missionTitleKey: mission.p1m2.title
+  missionBriefingKey: mission.p1m2.briefing
+  redDurationSeconds: 6
+  greenDurationSeconds: 3
+  minVehicleDistanceMeters: 4
+  maxVehicleDistanceMeters: 28
+  vehicleCycleSpeed: 1.4
+  safeVehicleDistanceMeters: 13
+  requiredSafeCrosses: 2
+  allowCrossOnlyOnGreen: 1
+  timingDiscipline01: 0.75
+  enableDistractionEvent: 0
+  distractionDelaySeconds: 3.0
+  distractionMessageKey: feedback.info.distraction
+  enablePressureEvent: 0
+  pressureStartDelaySeconds: 6.0
+  pressureDurationSeconds: 6
+  pressureMinVehicleDistanceMeters: 3
+  pressureMaxVehicleDistanceMeters: 16
+  pressureVehicleCycleSpeed: 2.2
+  pressureStartMessageKey: feedback.info.pressure_start
+  pressureEndMessageKey: feedback.info.pressure_end

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>Safe Steps Addis — Design Preview</title>
+<style>
+:root{--bg:#0b0f14;--card:#161b22;--ink:#e6edf3;--mute:#8b949e;--accent:#ffd600;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--ink);}
+header{padding:24px 32px;border-bottom:1px solid #222;display:flex;align-items:center;gap:16px;}
+header h1{margin:0;font-size:20px;font-weight:700;}
+header .sub{color:var(--mute);font-size:14px;}
+main{padding:24px 32px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;}
+.card{background:var(--card);border:1px solid #222;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:transform .15s, border-color .15s;}
+.card:hover{transform:translateY(-2px);border-color:var(--accent);}
+.thumb{aspect-ratio:9/16;background:#0a0d11;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.thumb img{width:100%;height:100%;object-fit:cover;}
+.thumb.broken{color:#555;font-size:13px;}
+.meta{padding:12px 14px;}
+.meta .name{font-weight:600;font-size:14px;text-transform:capitalize;}
+.meta .tags{margin-top:4px;font-size:11px;color:var(--mute);display:flex;gap:8px;}
+.tag{padding:2px 6px;background:#222;border-radius:4px;}
+.tag.html{background:#1f6feb33;color:#79c0ff;}
+.tag.png{background:#2ea04333;color:#7ee787;}
+</style>
+</head><body>
+<header>
+  <h1>Safe Steps Addis — Stitch Design Preview</h1>
+  <span class="sub">10 screens · Tailwind + Plus Jakarta Sans / Quicksand · Material 3 palette</span>
+</header>
+<main id="grid"></main>
+<script>
+const screens = [
+  {id:'splash_screen', html:false, png:true},
+  {id:'language_selection', html:true, png:true},
+  {id:'profile_creation', html:false, png:true},
+  {id:'character_welcome', html:false, png:true},
+  {id:'home_menu', html:true, png:true},
+  {id:'mission_briefing', html:true, png:true},
+  {id:'gameplay_hud', html:true, png:true},
+  {id:'feedback_screen', html:true, png:true},
+  {id:'results_screen', html:true, png:true},
+  {id:'settings_language', html:true, png:true},
+];
+const grid = document.getElementById('grid');
+for(const s of screens){
+  const link = s.html ? `${s.id}/code.html` : `${s.id}/screen.png`;
+  const tags = [];
+  if(s.html) tags.push('<span class="tag html">HTML</span>');
+  if(s.png) tags.push('<span class="tag png">PNG</span>');
+  grid.insertAdjacentHTML('beforeend', `
+    <a class="card" href="${link}" target="_blank">
+      <div class="thumb"><img src="${s.id}/screen.png" alt="" onerror="this.parentNode.classList.add('broken');this.replaceWith(document.createTextNode('(no preview)'));"></div>
+      <div class="meta">
+        <div class="name">${s.id.replace(/_/g,' ')}</div>
+        <div class="tags">${tags.join('')}</div>
+      </div>
+    </a>
+  `);
+}
+</script>
+</body></html>
