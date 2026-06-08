@@ -27,10 +27,18 @@ namespace SGame.Editor
         private const float RoadLength = 70f;          // along X
         private const float SidewalkWidth = 3f;
         private const float PathWidth = 3f;
-        private const float HomeZ = -26f;
+        // Home is far back from the road so the player has a long runway to
+        // observe at least one full RED→GREEN→RED light cycle while running
+        // toward the zebra. At ~5.5 m/s the kid takes ~8.5s to reach the curb,
+        // which lines up with one full traffic-light cycle.
+        private const float HomeZ = -55f;
         private const float SchoolZ = 26f;
-        private const float CarLoopStartX = -32f;
-        private const float CarLoopEndX   =  32f;
+        // Compact loop — cars wrap around just outside the visible window so
+        // the road never appears empty. With 64m the cars used to vanish for
+        // ~6s of every cycle, which looked like "no cars are moving" even
+        // though they were just off-screen waiting to loop.
+        private const float CarLoopStartX = -22f;
+        private const float CarLoopEndX   =  22f;
         private const float SouthLaneZ = -1.8f;
         private const float NorthLaneZ =  1.8f;
 
@@ -104,13 +112,44 @@ namespace SGame.Editor
             BuildMissionManager(out MissionController missionController);
             var crosswalkZone = BuildCrosswalkTriggers(missionController, trafficLight, kidPlayer);
             var schoolGoal = BuildSchoolGoal(crosswalkZone);
+            var homeGoal = BuildHomeGoal(crosswalkZone);
+            var classroomAnchor = BuildSchoolInterior();
+            var roundTrip = BuildRoundTripController(schoolGoal, homeGoal, crosswalkZone, kidPlayer, classroomAnchor);
+
+            // (Removed: the floating 3D chevron above the kid's head felt
+            // intrusive. The objective banner at the top of the HUD still
+            // tells the player what to do at each milestone.)
+
+            // Parked cars + extra "lived-in" props (bus stop, planters,
+            // hydrant, trash bags) on top of the existing street furniture
+            // (mailbox, trash cans, benches) that BuildStreetProps() above
+            // already placed.
+            BuildParkedCars();
+            BuildExtraStreetProps();
+
+            // Procedural ambient audio (city rumble, occasional horns,
+            // distant chatter, footsteps tied to the kid's running cadence).
+            BuildAmbientAudio(kidPlayer);
+
             BuildCarReporter(missionController, crosswalkCenter, cars);
             trafficLight.Configure(missionController, lightHead);
-            BuildHUD(missionController, trafficLight, crosswalkZone, schoolGoal);
+            BuildHUD(missionController, trafficLight, crosswalkZone, schoolGoal, roundTrip);
 
             var boot = new GameObject("WalkMissionBootstrapper");
             var bootScript = boot.AddComponent<WalkMissionBootstrapper>();
             bootScript.Bind(missionController);
+
+            // Silent runtime watchdog — prevents soft-locks where Time.timeScale
+            // gets stuck at slow-mo, or the kid's walkingAllowed flag stays false
+            // across a Play session. No on-screen UI; pure safety net.
+            var watchdog = new GameObject("LiveDebugHUD");
+            watchdog.AddComponent<LiveDebugHUD>();
+
+            // Mark non-moving renderers as static so Unity can batch them.
+            // This is the single biggest mobile perf win — collapses dozens of
+            // separate draw calls (sidewalks, buildings, fences, signs, trees)
+            // into a small set of combined meshes.
+            MarkSceneStaticForBatching();
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -119,26 +158,44 @@ namespace SGame.Editor
             EditorUtility.DisplayDialog("WalkSceneBuilder",
                 "Built " + ScenePath + ".\n\n" +
                 "Press ▶ Play.\n" +
-                "• The kid auto-walks the whole time.\n" +
-                "• Light GREEN = cars go, peds must WAIT.\n" +
-                "• Light RED   = cars stop, peds may CROSS.\n" +
-                "• Tap WAIT to stop the kid; tap CROSS to resume.\n" +
-                "• On the zebra ANY time the light is GREEN → ACCIDENT.\n" +
-                "  (Includes the light changing while the kid is still on the road.)\n" +
-                "• Reach the school after a safe cross to win.",
+                "• Kid auto-RUNS from frame 1 (accel/decel + walk↔run blend).\n" +
+                "• STOP halts her, GO resumes.\n" +
+                "• Cars-light GREEN = cars go, peds must STOP.\n" +
+                "• Cars-light RED   = cars stop, peds may GO.\n" +
+                "• On the zebra ANY time the light is GREEN → ACCIDENT.\n\n" +
+                "World life:\n" +
+                "  • 6 walking NPCs + 2 crosswalk-using NPCs (yield to each\n" +
+                "    other and to the player).\n" +
+                "  • 4 parked cars on the shoulders, bus stop with bench &\n" +
+                "    sign, planters, fire hydrant, trash bags.\n" +
+                "  • Procedural AMBIENT AUDIO: city rumble loop, occasional\n" +
+                "    distant horns, distant chatter, kid's footsteps tied to\n" +
+                "    her running cadence.\n\n" +
+                "Round trip:\n" +
+                "  1) Run from home to the school front door.\n" +
+                "  2) Fade to black → fade in to a CLASSROOM diorama: teacher\n" +
+                "     at the blackboard, 7 classmates, the kid at her own\n" +
+                "     labelled desk. 3 road-safety lessons display in turn.\n" +
+                "  3) Fade out → kid emerges from the back door, walks the\n" +
+                "     courtyard path, joins the north sidewalk, walks WEST\n" +
+                "     along the sidewalk to the zebra, crosses, walks the\n" +
+                "     south sidewalk + home path to HOME.\n" +
+                "  4) She NEVER walks on grass — yellow chevron breadcrumbs\n" +
+                "     mark the entire return route.\n\n" +
+                "Mobile: shadows + AO + motion blur + chromatic aberration are\n" +
+                "stripped on Android/iOS; all static geometry is BatchingStatic.",
                 "Open it");
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         }
 
         // ── Lighting ─────────────────────────────────────────────────────────
 
-        // ── Quality settings — force a tier that supports realism features ──
-        // The default Unity project ships several quality presets with shadows,
-        // reflection probes, and pixel lights DISABLED. With those off, none
-        // of the Phase 1 changes (reflective paint, cast shadows, post-proc'd
-        // contact light) are actually visible. We force the top tier and lock
-        // in the features we need so the scene looks the way the builder
-        // intends — no matter which tier the user had selected in Edit menu.
+        // ── Quality settings — pick a tier appropriate to the build target ──
+        // Editor / PC / WebGL get the high-quality preset (shadow cascades,
+        // 4× MSAA, real-time reflections). Android gets a lean mobile preset
+        // (1 cascade, 30m shadow distance, 2× MSAA, 2 pixel lights) so the
+        // game runs at 60 fps on mid-range phones without losing the road-
+        // safety story the visuals are telling.
         private static void BuildQualitySettings()
         {
             int top = QualitySettings.names.Length - 1;
@@ -147,18 +204,98 @@ namespace SGame.Editor
                 QualitySettings.SetQualityLevel(top, applyExpensiveChanges: true);
             }
 
-            QualitySettings.realtimeReflectionProbes = true;
+            bool isMobile = IsMobileBuildTarget();
+
+            QualitySettings.realtimeReflectionProbes = !isMobile;
             QualitySettings.shadows = ShadowQuality.All;
-            QualitySettings.shadowResolution = ShadowResolution.High;
+            QualitySettings.shadowResolution = isMobile
+                ? ShadowResolution.Medium
+                : ShadowResolution.High;
             QualitySettings.shadowProjection = ShadowProjection.StableFit;
-            QualitySettings.shadowDistance = 110f;
-            QualitySettings.shadowCascades = 4;
-            QualitySettings.softParticles = true;
-            QualitySettings.pixelLightCount = Mathf.Max(4, QualitySettings.pixelLightCount);
-            QualitySettings.antiAliasing = 4;
+            QualitySettings.shadowDistance = isMobile ? 35f : 110f;
+            QualitySettings.shadowCascades = isMobile ? 1 : 4;
+            QualitySettings.softParticles = !isMobile;
+            QualitySettings.pixelLightCount = isMobile ? 2 : Mathf.Max(4, QualitySettings.pixelLightCount);
+            QualitySettings.antiAliasing = isMobile ? 2 : 4;
+
+            // Cap the frame rate on mobile so the GPU isn't burning battery
+            // pushing 90+ fps when the game is designed around 60.
+            if (isMobile)
+            {
+                Application.targetFrameRate = 60;
+                QualitySettings.vSyncCount = 0;
+            }
 
             // Mark project settings dirty so the changes persist to disk.
             AssetDatabase.SaveAssets();
+        }
+
+        private static bool IsMobileBuildTarget()
+        {
+            var t = EditorUserBuildSettings.activeBuildTarget;
+            return t == BuildTarget.Android || t == BuildTarget.iOS;
+        }
+
+        // ── Static batching ──────────────────────────────────────────────────
+        //
+        // Walks the scene root and flips StaticEditorFlags on everything that
+        // shouldn't move (environment, buildings, fences, props, signs). The
+        // player, cars, NPCs, coins, traffic light bulbs, the objective
+        // arrow, and the HUD are skipped.
+        private static readonly string[] DynamicRoots = new[]
+        {
+            "Player", "Cars", "NPCs", "CrosswalkNPCs", "Coins", "ObjectiveArrow",
+            "HUDCanvas", "FadeOverlay", "RoundTripController", "SchoolGoal",
+            "HomeGoal", "TrafficLight", "EventSystem", "Main Camera",
+            "WalkMissionBootstrapper", "ObjectiveTargets", "MissionController",
+            "CarDistanceReporter", "CrosswalkCenter"
+        };
+
+        private static void MarkSceneStaticForBatching()
+        {
+            var roots = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
+            foreach (var root in roots)
+            {
+                if (System.Array.IndexOf(DynamicRoots, root.name) >= 0) continue;
+                MarkStaticRecursive(root.transform);
+            }
+        }
+
+        private static void MarkStaticRecursive(Transform t)
+        {
+            // Skip dynamic sub-trees nested under environment.
+            if (System.Array.IndexOf(DynamicRoots, t.name) >= 0) return;
+
+            // Anything with a script that ticks at runtime should NOT be static.
+            // (Coins spin, traffic lights cycle, etc.)
+            var behaviours = t.GetComponents<MonoBehaviour>();
+            bool hasGameplayScript = false;
+            for (int i = 0; i < behaviours.Length; i++)
+            {
+                var mb = behaviours[i];
+                if (mb == null) continue;
+                if (mb is Coin || mb is CarMover || mb is KidPlayer ||
+                    mb is HumanoidLimbAnimator || mb is TrafficLight3D ||
+                    mb is NPCWalker || mb is CrosswalkNPCWalker ||
+                    mb is ObjectiveArrow)
+                {
+                    hasGameplayScript = true;
+                    break;
+                }
+            }
+            if (!hasGameplayScript)
+            {
+                GameObjectUtility.SetStaticEditorFlags(t.gameObject,
+                    StaticEditorFlags.BatchingStatic |
+                    StaticEditorFlags.OccluderStatic |
+                    StaticEditorFlags.OccludeeStatic |
+                    StaticEditorFlags.ReflectionProbeStatic);
+            }
+
+            for (int i = 0; i < t.childCount; i++)
+            {
+                MarkStaticRecursive(t.GetChild(i));
+            }
         }
 
         private static void BuildLighting()
@@ -244,6 +381,8 @@ namespace SGame.Editor
         private static void BuildPostProcessing()
         {
 #if UNITY_POST_PROCESSING_STACK_V2
+            bool isMobile = IsMobileBuildTarget();
+
             // Profile asset must exist on disk BEFORE we add the effect
             // ScriptableObjects to it, otherwise the SO references serialize
             // as fileID:0 and the effects vanish on save.
@@ -258,17 +397,22 @@ namespace SGame.Editor
             profile.name = "WalkPostProcess";
             AssetDatabase.CreateAsset(profile, profilePath);
 
+            // Bloom is the biggest "real-world feel" win and cheap-ish even on
+            // mobile (we drop intensity + raise threshold so only emissive
+            // signs and headlights bloom).
             var bloom = AddEffect<Bloom>(profile);
             bloom.enabled.Override(true);
-            bloom.intensity.Override(3.2f);
-            bloom.threshold.Override(0.70f);
+            bloom.intensity.Override(isMobile ? 1.6f : 3.2f);
+            bloom.threshold.Override(isMobile ? 0.95f : 0.70f);
             bloom.softKnee.Override(0.65f);
-            bloom.diffusion.Override(8f);
+            bloom.diffusion.Override(isMobile ? 5f : 8f);
             bloom.color.Override(new Color(1.0f, 0.95f, 0.85f));
 
             var grading = AddEffect<ColorGrading>(profile);
             grading.enabled.Override(true);
-            grading.gradingMode.Override(GradingMode.HighDefinitionRange);
+            grading.gradingMode.Override(isMobile
+                ? GradingMode.LowDefinitionRange  // LDR is cheaper on mobile GPUs
+                : GradingMode.HighDefinitionRange);
             grading.tonemapper.Override(Tonemapper.ACES);
             grading.postExposure.Override(0.55f);
             grading.contrast.Override(22f);
@@ -277,28 +421,29 @@ namespace SGame.Editor
             grading.tint.Override(-4f);
             grading.colorFilter.Override(new Color(1.04f, 1.00f, 0.95f));
 
-            var ao = AddEffect<AmbientOcclusion>(profile);
-            ao.enabled.Override(true);
-            ao.mode.Override(AmbientOcclusionMode.ScalableAmbientObscurance);
-            ao.intensity.Override(1.40f);
-            ao.radius.Override(0.8f);
-            ao.color.Override(new Color(0.05f, 0.06f, 0.10f));
+            // AO is *the* most expensive post-fx on mobile — skip it there.
+            if (!isMobile)
+            {
+                var ao = AddEffect<AmbientOcclusion>(profile);
+                ao.enabled.Override(true);
+                ao.mode.Override(AmbientOcclusionMode.ScalableAmbientObscurance);
+                ao.intensity.Override(1.40f);
+                ao.radius.Override(0.8f);
+                ao.color.Override(new Color(0.05f, 0.06f, 0.10f));
+            }
 
             var vignette = AddEffect<Vignette>(profile);
             vignette.enabled.Override(true);
             vignette.mode.Override(VignetteMode.Classic);
-            vignette.intensity.Override(0.38f);
+            vignette.intensity.Override(isMobile ? 0.28f : 0.38f);
             vignette.smoothness.Override(0.45f);
             vignette.color.Override(new Color(0.03f, 0.04f, 0.08f));
 
-            var motionBlur = AddEffect<MotionBlur>(profile);
-            motionBlur.enabled.Override(true);
-            motionBlur.shutterAngle.Override(180f);
-            motionBlur.sampleCount.Override(10);
-
-            var aberration = AddEffect<ChromaticAberration>(profile);
-            aberration.enabled.Override(true);
-            aberration.intensity.Override(0.30f);
+            // Motion blur + chromatic aberration are bandwidth-heavy AND, more
+            // critically, motion blur was smearing the moving cars into pale
+            // ghost-blobs that looked stationary from the home end of the
+            // scene. We intentionally keep these effects disabled.
+            // (Re-enable later when chasing photo-realism on PC only.)
 
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssets();
@@ -611,17 +756,36 @@ namespace SGame.Editor
             crosswalkCenter = marker.transform;
 
             // Crosswalk approach lines on the sidewalks (subtle "stop here" marks)
-            CreateCube("Curb_Stop_South", env,
+            StripCollider(CreateCube("Curb_Stop_South", env,
                 new Vector3(0f, 0.13f, -(RoadWidth / 2f + 0.4f)),
-                new Vector3(PathWidth, 0.02f, 0.20f), CrosswalkColor);
-            CreateCube("Curb_Stop_North", env,
+                new Vector3(PathWidth, 0.02f, 0.20f), CrosswalkColor));
+            StripCollider(CreateCube("Curb_Stop_North", env,
                 new Vector3(0f, 0.13f,  (RoadWidth / 2f + 0.4f)),
-                new Vector3(PathWidth, 0.02f, 0.20f), CrosswalkColor);
+                new Vector3(PathWidth, 0.02f, 0.20f), CrosswalkColor));
 
             // Home (south end)
             var homeRoot = new GameObject("Home").transform;
             homeRoot.SetParent(env, false);
             homeRoot.position = new Vector3(0f, 0f, HomeZ);
+
+            // Welcome-mat patio in front of the home door + a small lawn either side.
+            var matColor = new Color(0.60f, 0.40f, 0.25f);
+            StripCollider(CreateCube("Home_WelcomeMat", env,
+                new Vector3(0f, 0.05f, HomeZ + 2.8f),
+                new Vector3(1.6f, 0.05f, 0.7f), matColor));
+            var yardColor2 = new Color(0.58f, 0.78f, 0.45f);
+            var leftYard = CreateCube("Home_Yard_W", env,
+                new Vector3(-2.8f, 0.03f, HomeZ + 2.0f),
+                new Vector3(2.5f, 0.04f, 4.0f), yardColor2);
+            ApplyTextured(leftYard.GetComponent<MeshRenderer>(), _grassTex,
+                new Color(0.95f, 1f, 0.86f), 0f, 0.06f, new Vector2(2.5f, 2f));
+            StripCollider(leftYard);
+            var rightYard = CreateCube("Home_Yard_E", env,
+                new Vector3(2.8f, 0.03f, HomeZ + 2.0f),
+                new Vector3(2.5f, 0.04f, 4.0f), yardColor2);
+            ApplyTextured(rightYard.GetComponent<MeshRenderer>(), _grassTex,
+                new Color(0.95f, 1f, 0.86f), 0f, 0.06f, new Vector2(2.5f, 2f));
+            StripCollider(rightYard);
 
             var homeBody = CreateCube("Home_Body", homeRoot, new Vector3(0f, 1.5f, 0f),
                 new Vector3(4.5f, 3f, 4.5f), HomeColor);
@@ -638,8 +802,8 @@ namespace SGame.Editor
                 new Vector3(1.0f, 1.8f, 0.05f), homeDoorColor);
             ApplyPBR(homeDoor.GetComponent<MeshRenderer>(), homeDoorColor, 0.10f, 0.40f);
             // Brass-ish door knob.
-            CreateCube("Home_DoorKnob", homeRoot, new Vector3(0.35f, 0.95f, 2.30f),
-                new Vector3(0.06f, 0.06f, 0.06f), new Color(0.85f, 0.65f, 0.20f));
+            StripCollider(CreateCube("Home_DoorKnob", homeRoot, new Vector3(0.35f, 0.95f, 2.30f),
+                new Vector3(0.06f, 0.06f, 0.06f), new Color(0.85f, 0.65f, 0.20f)));
 
             MakeWindow(homeRoot, new Vector3(-1.2f, 1.8f, 2.26f),
                 new Vector3(0.8f, 0.8f, 0.05f), lit: true);
@@ -674,6 +838,21 @@ namespace SGame.Editor
                 new Vector3(1.6f, 2.0f, 0.05f), schoolDoorColor);
             ApplyPBR(schoolDoor.GetComponent<MeshRenderer>(), schoolDoorColor, 0.10f, 0.40f);
 
+            // Back door on the NORTH face of the school — the kid exits here on
+            // her return trip home.
+            var schoolBackDoor = CreateCube("School_BackDoor", schoolRoot,
+                new Vector3(0f, 1.0f, 2.76f),
+                new Vector3(1.6f, 2.0f, 0.05f), schoolDoorColor);
+            ApplyPBR(schoolBackDoor.GetComponent<MeshRenderer>(), schoolDoorColor, 0.10f, 0.40f);
+            StripCollider(schoolBackDoor);
+            // Small "EXIT" sign over the back door.
+            var backExitSign = CreateCube("School_BackDoorSign", schoolRoot,
+                new Vector3(0f, 2.4f, 2.78f),
+                new Vector3(1.2f, 0.35f, 0.06f), new Color(0.95f, 0.85f, 0.20f));
+            ApplyEmissive(backExitSign.GetComponent<MeshRenderer>(),
+                new Color(0.95f, 0.85f, 0.20f), 1.2f);
+            StripCollider(backExitSign);
+
             MakeWindow(schoolRoot, new Vector3(-2.5f, 2.4f, -2.78f),
                 new Vector3(1.0f, 1.0f, 0.04f), lit: true);
             MakeWindow(schoolRoot, new Vector3(-2.5f, 1.0f, -2.78f),
@@ -704,6 +883,131 @@ namespace SGame.Editor
             entryLight.color = new Color(1.0f, 0.92f, 0.70f);
             entryLight.shadows = LightShadows.None;
 
+            // Back-of-school CONCRETE COURTYARD + walkway. We build:
+            //  • A wide patio behind the school (with a textured concrete look)
+            //  • An L-shaped walkway: east from the back door, then south past
+            //    the east face all the way down to the north sidewalk (no gaps,
+            //    so the kid never has to step onto grass on her way home)
+            //  • A picket fence around the schoolyard
+            //  • A couple of decorative bushes + a wooden bench
+            //  • Yellow breadcrumb arrows painted on the path showing the way
+            var pathColor   = new Color(0.72f, 0.70f, 0.66f);
+            var yardColor   = new Color(0.58f, 0.78f, 0.45f);
+            var fenceColor  = new Color(0.95f, 0.94f, 0.90f);
+            float backY = 0.05f;
+
+            // Wide back patio just outside the back door (3m × 4m).
+            var patio = CreateCube("School_BackPatio", env,
+                new Vector3(0f, backY, SchoolZ + 3.5f),
+                new Vector3(4f, 0.1f, 1.6f), pathColor);
+            ApplyPBR(patio.GetComponent<MeshRenderer>(), pathColor, 0.05f, 0.20f);
+            StripCollider(patio);
+
+            // Grass courtyard fills the rest of the back area.
+            var yard = CreateCube("School_BackYard", env,
+                new Vector3(0f, backY - 0.02f, SchoolZ + 5.5f),
+                new Vector3(11f, 0.06f, 4.5f), yardColor);
+            ApplyTextured(yard.GetComponent<MeshRenderer>(), _grassTex,
+                new Color(0.92f, 1f, 0.86f), 0f, 0.06f, new Vector2(6f, 3f));
+            StripCollider(yard);
+
+            // 1) Strip going EAST from back door to the east-back corner.
+            var backStrip = CreateCube("School_BackPath_East", env,
+                new Vector3(2.75f, backY, SchoolZ + 4.5f),
+                new Vector3(4.5f, 0.1f, 1.4f), pathColor);
+            ApplyPBR(backStrip.GetComponent<MeshRenderer>(), pathColor, 0.05f, 0.20f);
+            StripCollider(backStrip);
+            // 2) Strip going SOUTH along the east face of the school all the
+            //    way down to (and slightly overlapping) the north sidewalk so
+            //    the kid never has to step onto grass.
+            const float northSidewalkSouthEdge = 4f; // RoadWidth/2 + SidewalkWidth/2 = 5.5 ± 1.5 → south edge at z=4
+            float southStripCenter = (SchoolZ + 4.5f + northSidewalkSouthEdge) * 0.5f;
+            float southStripLen    = (SchoolZ + 4.5f) - northSidewalkSouthEdge;
+            var southStrip = CreateCube("School_BackPath_South", env,
+                new Vector3(5f, backY, southStripCenter),
+                new Vector3(1.5f, 0.1f, southStripLen), pathColor);
+            ApplyPBR(southStrip.GetComponent<MeshRenderer>(), pathColor, 0.05f, 0.20f);
+            StripCollider(southStrip);
+
+            // 3) Yellow breadcrumb chevrons painted on the walkway pointing
+            //    south to the sidewalk. Strictly visual — strip colliders.
+            var breadcrumbColor = new Color(1.0f, 0.85f, 0.20f);
+            for (float bz = SchoolZ + 4f; bz > 9f; bz -= 2.0f)
+            {
+                var crumb = CreateCube("PathArrow", env,
+                    new Vector3(5f, 0.11f, bz),
+                    new Vector3(0.8f, 0.02f, 0.15f), breadcrumbColor);
+                StripCollider(crumb);
+                ApplyEmissive(crumb.GetComponent<MeshRenderer>(), breadcrumbColor, 0.6f);
+            }
+
+            // 4) A second yellow chevron line along the north sidewalk from
+            //    the east-side path west to the crosswalk centre.
+            for (float bx = 4.5f; bx > 0.5f; bx -= 1.5f)
+            {
+                var crumb = CreateCube("PathArrow", env,
+                    new Vector3(bx, 0.13f, 5.5f),
+                    new Vector3(0.15f, 0.02f, 0.8f), breadcrumbColor);
+                StripCollider(crumb);
+                ApplyEmissive(crumb.GetComponent<MeshRenderer>(), breadcrumbColor, 0.6f);
+            }
+            // 5) Continue south of the road too — across the south sidewalk
+            //    onto the home path.
+            for (float bz = -4.5f; bz > HomeZ + 6f; bz -= 3f)
+            {
+                var crumb = CreateCube("PathArrow", env,
+                    new Vector3(0f, 0.13f, bz),
+                    new Vector3(0.8f, 0.02f, 0.15f), breadcrumbColor);
+                StripCollider(crumb);
+                ApplyEmissive(crumb.GetComponent<MeshRenderer>(), breadcrumbColor, 0.6f);
+            }
+
+            // ── Picket fence around the courtyard ──
+            // Back fence (along z = SchoolZ + 7.5, parallel to road).
+            float fenceZ = SchoolZ + 7.7f;
+            for (float fx = -5.5f; fx <= 5.5f; fx += 0.45f)
+            {
+                StripCollider(CreateCube("Picket", env,
+                    new Vector3(fx, 0.45f, fenceZ),
+                    new Vector3(0.08f, 0.9f, 0.05f), fenceColor));
+            }
+            // Two horizontal rails.
+            StripCollider(CreateCube("Rail_Top", env,
+                new Vector3(0f, 0.78f, fenceZ),
+                new Vector3(11.2f, 0.06f, 0.05f), fenceColor));
+            StripCollider(CreateCube("Rail_Bot", env,
+                new Vector3(0f, 0.18f, fenceZ),
+                new Vector3(11.2f, 0.06f, 0.05f), fenceColor));
+            // Short return fences on each side (so the courtyard reads as enclosed).
+            for (float fz = SchoolZ + 3.2f; fz <= SchoolZ + 7.5f; fz += 0.45f)
+            {
+                StripCollider(CreateCube("Picket_W", env,
+                    new Vector3(-5.6f, 0.45f, fz),
+                    new Vector3(0.05f, 0.9f, 0.08f), fenceColor));
+                StripCollider(CreateCube("Picket_E", env,
+                    new Vector3( 5.6f, 0.45f, fz),
+                    new Vector3(0.05f, 0.9f, 0.08f), fenceColor));
+            }
+
+            // A couple of trees + a wooden bench for the courtyard vignette.
+            BuildTree(env, new Vector3(-4.2f, 0f, SchoolZ + 6.3f));
+            BuildTree(env, new Vector3( 4.2f, 0f, SchoolZ + 6.3f));
+
+            var benchColor = new Color(0.36f, 0.24f, 0.16f);
+            var benchSeat = CreateCube("Bench_Seat", env,
+                new Vector3(-2.2f, 0.45f, SchoolZ + 6.4f),
+                new Vector3(1.6f, 0.10f, 0.55f), benchColor);
+            ApplyPBR(benchSeat.GetComponent<MeshRenderer>(), benchColor, 0.05f, 0.40f);
+            StripCollider(CreateCube("Bench_Leg_L", env,
+                new Vector3(-2.95f, 0.225f, SchoolZ + 6.4f),
+                new Vector3(0.10f, 0.45f, 0.50f), benchColor));
+            StripCollider(CreateCube("Bench_Leg_R", env,
+                new Vector3(-1.45f, 0.225f, SchoolZ + 6.4f),
+                new Vector3(0.10f, 0.45f, 0.50f), benchColor));
+            StripCollider(CreateCube("Bench_Back", env,
+                new Vector3(-2.2f, 0.78f, SchoolZ + 6.65f),
+                new Vector3(1.6f, 0.55f, 0.06f), benchColor));
+
             // Some decorative trees along the sidewalks for a sense of scale.
             for (int i = -2; i <= 2; i++)
             {
@@ -718,12 +1022,12 @@ namespace SGame.Editor
         {
             // Solid white edge lines along both road edges (just inside the curb).
             const float edgeInset = 0.10f;
-            CreateCube("EdgeLine_South", env,
+            StripCollider(CreateCube("EdgeLine_South", env,
                 new Vector3(0f, 0.025f, -(RoadWidth / 2f - edgeInset)),
-                new Vector3(RoadLength, 0.03f, 0.10f), CrosswalkColor);
-            CreateCube("EdgeLine_North", env,
+                new Vector3(RoadLength, 0.03f, 0.10f), CrosswalkColor));
+            StripCollider(CreateCube("EdgeLine_North", env,
                 new Vector3(0f, 0.025f,  (RoadWidth / 2f - edgeInset)),
-                new Vector3(RoadLength, 0.03f, 0.10f), CrosswalkColor);
+                new Vector3(RoadLength, 0.03f, 0.10f), CrosswalkColor));
 
             // Dashed centerline — 1m dashes with 1.5m gaps, skip the 6m crosswalk zone.
             const float dashLength = 1.0f;
@@ -737,9 +1041,9 @@ namespace SGame.Editor
                 float center = cursor + dashLength / 2f;
                 if (Mathf.Abs(center) > crosswalkClearance)
                 {
-                    CreateCube($"CenterDash_{i++}", env,
+                    StripCollider(CreateCube($"CenterDash_{i++}", env,
                         new Vector3(center, 0.025f, 0f),
-                        new Vector3(dashLength, 0.03f, 0.12f), CrosswalkColor);
+                        new Vector3(dashLength, 0.03f, 0.12f), CrosswalkColor));
                 }
                 cursor += dashLength + gapLength;
             }
@@ -747,12 +1051,12 @@ namespace SGame.Editor
             // Stop lines on each lane just before the crosswalk (white, perpendicular
             // to the road). Cars decelerate here when their light is red.
             const float stopOffsetX = 5.5f;
-            CreateCube("StopLine_East", env,
+            StripCollider(CreateCube("StopLine_East", env,
                 new Vector3(-stopOffsetX, 0.025f, -1.8f),
-                new Vector3(0.20f, 0.03f, 3.0f), CrosswalkColor);
-            CreateCube("StopLine_West", env,
+                new Vector3(0.20f, 0.03f, 3.0f), CrosswalkColor));
+            StripCollider(CreateCube("StopLine_West", env,
                 new Vector3( stopOffsetX, 0.025f,  1.8f),
-                new Vector3(0.20f, 0.03f, 3.0f), CrosswalkColor);
+                new Vector3(0.20f, 0.03f, 3.0f), CrosswalkColor));
         }
 
         private static void BuildZebraStripes(Transform env)
@@ -773,10 +1077,11 @@ namespace SGame.Editor
             for (int i = 0; i < stripeCount; i++)
             {
                 float z = startZ + i * (stripeThicknessZ + stripeGapZ);
-                CreateCube($"Zebra_{i}", env,
+                var stripe = CreateCube($"Zebra_{i}", env,
                     new Vector3(0f, 0.03f, z),
                     new Vector3(stripeLengthX, stripeHeightY, stripeThicknessZ),
                     CrosswalkColor);
+                StripCollider(stripe); // decorative — kid steps on, not into.
             }
         }
 
@@ -810,8 +1115,12 @@ namespace SGame.Editor
             var visual = new GameObject("Visual").transform;
             visual.SetParent(go.transform, false);
             visual.localPosition = Vector3.zero;
-            // Tilt the coin so it stands up like a token (face toward +X / -X).
-            visual.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            // Orient the disc as a vertical coin whose flat face points along
+            // the camera's line of sight (+/- Z). Combined with the world-Y
+            // spin in Coin.cs, this gives the classic "gold coin spinning in
+            // mid-air" look — the disc reads as a circle most of the time and
+            // flashes to an edge as it rotates.
+            visual.localRotation = Quaternion.Euler(90f, 0f, 0f);
 
             var coinYellow      = new Color(1.00f, 0.85f, 0.18f);
             var coinYellowDeep  = new Color(0.85f, 0.65f, 0.05f);
@@ -1001,17 +1310,209 @@ namespace SGame.Editor
             float loopLen = CarLoopEndX - CarLoopStartX;
 
             // Level 1: cars are mellow (~14-18 km/h). Plenty of time to react.
-            // Eastbound lane (south)
-            movers.Add(MakeVehicle(carsRoot, "Sedan_East",  VehicleKind.Sedan,   CarColor1, false, 4.5f, 0f,              light));
-            movers.Add(MakeVehicle(carsRoot, "Bajaj_East",  VehicleKind.Bajaj,   CarColor3, false, 3.8f, -loopLen / 21f,  light));
-            movers.Add(MakeVehicle(carsRoot, "Minibus_East",VehicleKind.Minibus, new Color(0.95f, 0.95f, 0.95f), false, 4.2f, -loopLen / 10f, light));
+            // 6 cars per lane on the 44m loop = ~7.3m gap between cars,
+            // so the player ALWAYS sees a continuous stream of traffic in
+            // the camera's ~24m horizontal slice — no more "empty road"
+            // perception. The phase offset is a per-car progress shift in
+            // METERS (converted to seconds via /speed) so spacing is exactly
+            // 44/6 m regardless of individual car speed.
+            //
+            // Eastbound lane (south, driveWest=false)
+            const float laneSpacing = 44f / 6f;
+            const float eastBaseSpeed = 4.0f;          // ~14 km/h
+            movers.Add(MakeVehicle(carsRoot, "Sedan_East",   VehicleKind.Sedan,   CarColor1,                       false, eastBaseSpeed + 0.3f, -0f * laneSpacing / eastBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Bajaj_East",   VehicleKind.Bajaj,   CarColor3,                       false, eastBaseSpeed,         -1f * laneSpacing / eastBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Minibus_East", VehicleKind.Minibus, new Color(0.95f, 0.45f, 0.18f),  false, eastBaseSpeed + 0.1f, -2f * laneSpacing / eastBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Truck_East",   VehicleKind.Truck,   CarColor6,                       false, eastBaseSpeed - 0.2f, -3f * laneSpacing / eastBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Sedan2_East",  VehicleKind.Sedan,   new Color(0.85f, 0.20f, 0.20f),  false, eastBaseSpeed + 0.2f, -4f * laneSpacing / eastBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Bajaj2_East",  VehicleKind.Bajaj,   new Color(0.20f, 0.55f, 0.85f),  false, eastBaseSpeed - 0.1f, -5f * laneSpacing / eastBaseSpeed, light));
 
-            // Westbound lane (north)
-            movers.Add(MakeVehicle(carsRoot, "Truck_West",  VehicleKind.Truck,   CarColor5, true, 3.5f, 0f,                light));
-            movers.Add(MakeVehicle(carsRoot, "Sedan_West",  VehicleKind.Sedan,   CarColor2, true, 4.3f, -loopLen / 18f,    light));
-            movers.Add(MakeVehicle(carsRoot, "Bajaj_West",  VehicleKind.Bajaj,   CarColor6, true, 3.5f, -loopLen / 11f,    light));
+            // Westbound lane (north, driveWest=true)
+            const float westBaseSpeed = 4.0f;
+            movers.Add(MakeVehicle(carsRoot, "Truck_West",   VehicleKind.Truck,   CarColor5,                       true,  westBaseSpeed - 0.2f, -0f * laneSpacing / westBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Sedan_West",   VehicleKind.Sedan,   CarColor2,                       true,  westBaseSpeed + 0.3f, -1f * laneSpacing / westBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Bajaj_West",   VehicleKind.Bajaj,   CarColor6,                       true,  westBaseSpeed,         -2f * laneSpacing / westBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Minibus_West", VehicleKind.Minibus, CarColor4,                       true,  westBaseSpeed + 0.1f, -3f * laneSpacing / westBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Sedan2_West",  VehicleKind.Sedan,   new Color(0.95f, 0.85f, 0.20f),  true,  westBaseSpeed + 0.2f, -4f * laneSpacing / westBaseSpeed, light));
+            movers.Add(MakeVehicle(carsRoot, "Truck2_West",  VehicleKind.Truck,   new Color(0.30f, 0.30f, 0.30f),  true,  westBaseSpeed - 0.1f, -5f * laneSpacing / westBaseSpeed, light));
 
             return movers.ToArray();
+        }
+
+        // ── Parked / decorative vehicles ─────────────────────────────────────
+        //
+        // These have NO CarMover — they're stationary props that make the
+        // street feel inhabited. Placed along the shoulders far from the
+        // crosswalk so they don't visually interfere with traffic.
+
+        private static void BuildParkedCars()
+        {
+            var root = new GameObject("ParkedCars").transform;
+            // North shoulder — east end.
+            var p1 = MakeParkedVehicle(root, "Parked_N1", VehicleKind.Sedan,
+                new Color(0.35f, 0.45f, 0.65f),
+                new Vector3(-22f, 0.02f, 3.2f), faceWest: true);
+            _ = p1;
+            // North shoulder — west end.
+            MakeParkedVehicle(root, "Parked_N2", VehicleKind.Bajaj,
+                new Color(0.85f, 0.70f, 0.25f),
+                new Vector3(22f, 0.02f, 3.2f), faceWest: false);
+            // South shoulder — east end.
+            MakeParkedVehicle(root, "Parked_S1", VehicleKind.Minibus,
+                new Color(0.20f, 0.50f, 0.30f),
+                new Vector3(-26f, 0.02f, -3.2f), faceWest: false);
+            // South shoulder — west end.
+            MakeParkedVehicle(root, "Parked_S2", VehicleKind.Truck,
+                new Color(0.55f, 0.25f, 0.20f),
+                new Vector3(26f, 0.02f, -3.2f), faceWest: true);
+        }
+
+        private static GameObject MakeParkedVehicle(Transform parent, string name, VehicleKind kind,
+            Color bodyColor, Vector3 worldPos, bool faceWest)
+        {
+            var root = new GameObject(name).transform;
+            root.SetParent(parent, false);
+            root.position = worldPos;
+            root.rotation = Quaternion.LookRotation(faceWest ? Vector3.left : Vector3.right, Vector3.up);
+
+            switch (kind)
+            {
+                case VehicleKind.Sedan:   BuildSedanBody(root, bodyColor);   break;
+                case VehicleKind.Bajaj:   BuildBajajBody(root, bodyColor);   break;
+                case VehicleKind.Minibus: BuildMinibusBody(root, bodyColor); break;
+                case VehicleKind.Truck:   BuildTruckBody(root, bodyColor);   break;
+            }
+            return root.gameObject;
+        }
+
+        // ── Extra street props (bus stop, planters, trash bags) ──────────────
+        //
+        // The original BuildStreetProps() already places benches, a fire
+        // hydrant, a mailbox and trash cans. This adds a SECOND layer of
+        // bigger props (a full bus stop with a sign, planters at every
+        // doorway, soft trash bags) so the street reads as a populated city
+        // block rather than a clean prototype.
+
+        private static void BuildExtraStreetProps()
+        {
+            var root = new GameObject("ExtraStreetProps").transform;
+
+            // Bus stop near the east end of the south sidewalk.
+            BuildBusStop(root, new Vector3(-18f, 0f, -(RoadWidth / 2f + SidewalkWidth / 2f + 0.1f)));
+
+            // A pair of planters flanking the home doorway.
+            BuildPlanter(root, new Vector3(-1.8f, 0f, HomeZ + 2.5f));
+            BuildPlanter(root, new Vector3( 1.8f, 0f, HomeZ + 2.5f));
+            // And two flanking the school front door.
+            BuildPlanter(root, new Vector3(-1.6f, 0f, SchoolZ - 3.2f));
+            BuildPlanter(root, new Vector3( 1.6f, 0f, SchoolZ - 3.2f));
+
+            // A second hydrant + bagged trash on the OPPOSITE sidewalk from
+            // the original fire-hydrant/trash-can pair so both sides look
+            // lived-in.
+            BuildHydrant(root, new Vector3(-12f, 0f,  (RoadWidth / 2f + SidewalkWidth / 2f)));
+            BuildTrashBag(root, new Vector3( 14f, 0f,  (RoadWidth / 2f + SidewalkWidth / 2f - 0.4f)));
+            BuildTrashBag(root, new Vector3( 14.7f, 0f, (RoadWidth / 2f + SidewalkWidth / 2f - 0.4f)));
+        }
+
+        private static void BuildBusStop(Transform parent, Vector3 pos)
+        {
+            var rootGo = new GameObject("BusStop");
+            rootGo.transform.SetParent(parent, false);
+            rootGo.transform.position = pos;
+
+            var glass = new Color(0.45f, 0.55f, 0.62f);
+            var frame = new Color(0.18f, 0.18f, 0.20f);
+            var benchC = new Color(0.42f, 0.28f, 0.18f);
+
+            // Shelter back wall + roof.
+            StripCollider(CreateCube("Back",  rootGo.transform, new Vector3(0f, 1.10f, -0.55f),
+                new Vector3(2.6f, 2.20f, 0.06f), glass));
+            StripCollider(CreateCube("Roof",  rootGo.transform, new Vector3(0f, 2.25f, -0.20f),
+                new Vector3(2.8f, 0.10f, 0.95f), frame));
+            // Side panel.
+            StripCollider(CreateCube("SideW", rootGo.transform, new Vector3(-1.30f, 1.10f, -0.10f),
+                new Vector3(0.06f, 2.20f, 0.85f), glass));
+            // Bench inside the shelter.
+            StripCollider(CreateCube("BenchSeat", rootGo.transform, new Vector3(0f, 0.45f, -0.30f),
+                new Vector3(2.2f, 0.10f, 0.40f), benchC));
+            StripCollider(CreateCube("BenchLegL", rootGo.transform, new Vector3(-0.95f, 0.20f, -0.30f),
+                new Vector3(0.08f, 0.40f, 0.35f), benchC));
+            StripCollider(CreateCube("BenchLegR", rootGo.transform, new Vector3( 0.95f, 0.20f, -0.30f),
+                new Vector3(0.08f, 0.40f, 0.35f), benchC));
+            // Bus stop sign on a pole.
+            StripCollider(CreateCube("Pole", rootGo.transform, new Vector3(1.45f, 1.05f, 0.20f),
+                new Vector3(0.07f, 2.10f, 0.07f), frame));
+            var sign = CreateCube("Sign", rootGo.transform, new Vector3(1.45f, 2.10f, 0.20f),
+                new Vector3(0.55f, 0.40f, 0.05f), new Color(0.20f, 0.55f, 0.90f));
+            ApplyEmissive(sign.GetComponent<MeshRenderer>(), new Color(0.20f, 0.55f, 0.90f), 0.8f);
+            StripCollider(sign);
+        }
+
+        private static void BuildPlanter(Transform parent, Vector3 pos)
+        {
+            var rootGo = new GameObject("Planter");
+            rootGo.transform.SetParent(parent, false);
+            rootGo.transform.position = pos;
+            var soil = new Color(0.30f, 0.20f, 0.12f);
+            var pot  = new Color(0.85f, 0.78f, 0.66f);
+            StripCollider(CreateCube("Pot", rootGo.transform, new Vector3(0f, 0.25f, 0f),
+                new Vector3(0.55f, 0.50f, 0.55f), pot));
+            StripCollider(CreateCube("Soil", rootGo.transform, new Vector3(0f, 0.51f, 0f),
+                new Vector3(0.50f, 0.04f, 0.50f), soil));
+            // A small bush of green spheres.
+            var rng = new System.Random((int)(pos.x * 73 + pos.z * 19));
+            for (int i = 0; i < 5; i++)
+            {
+                var leaf = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                Object.DestroyImmediate(leaf.GetComponent<Collider>());
+                leaf.transform.SetParent(rootGo.transform, false);
+                float r = 0.18f + (float)rng.NextDouble() * 0.10f;
+                leaf.transform.localPosition = new Vector3(
+                    ((float)rng.NextDouble() - 0.5f) * 0.35f,
+                    0.65f + (float)rng.NextDouble() * 0.20f,
+                    ((float)rng.NextDouble() - 0.5f) * 0.35f);
+                leaf.transform.localScale = new Vector3(r, r, r);
+                ApplyURPColor(leaf.GetComponent<MeshRenderer>(),
+                    new Color(0.30f + (float)rng.NextDouble() * 0.20f,
+                              0.55f + (float)rng.NextDouble() * 0.20f, 0.22f));
+            }
+        }
+
+        private static void BuildHydrant(Transform parent, Vector3 pos)
+        {
+            var rootGo = new GameObject("Hydrant");
+            rootGo.transform.SetParent(parent, false);
+            rootGo.transform.position = pos;
+            var red = new Color(0.85f, 0.18f, 0.18f);
+            StripCollider(CreateCube("Body", rootGo.transform, new Vector3(0f, 0.45f, 0f),
+                new Vector3(0.32f, 0.90f, 0.32f), red));
+            StripCollider(CreateCube("Cap", rootGo.transform, new Vector3(0f, 0.97f, 0f),
+                new Vector3(0.30f, 0.10f, 0.30f), red));
+            StripCollider(CreateCube("NozzleE", rootGo.transform, new Vector3(0.20f, 0.55f, 0f),
+                new Vector3(0.12f, 0.12f, 0.08f), red));
+            StripCollider(CreateCube("NozzleW", rootGo.transform, new Vector3(-0.20f, 0.55f, 0f),
+                new Vector3(0.12f, 0.12f, 0.08f), red));
+        }
+
+        private static void BuildTrashBag(Transform parent, Vector3 pos)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = "TrashBag";
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.transform.SetParent(parent, false);
+            go.transform.position = pos + new Vector3(0f, 0.30f, 0f);
+            go.transform.localScale = new Vector3(0.55f, 0.50f, 0.55f);
+            ApplyPBR(go.GetComponent<MeshRenderer>(), new Color(0.10f, 0.10f, 0.12f), 0f, 0.10f);
+        }
+
+        // ── Ambient audio ────────────────────────────────────────────────────
+
+        private static void BuildAmbientAudio(KidPlayer kid)
+        {
+            var go = new GameObject("AmbientAudio");
+            var amb = go.AddComponent<AmbientAudio>();
+            amb.Configure(kid);
         }
 
         private static CarMover MakeVehicle(Transform parent, string name, VehicleKind kind,
@@ -1028,6 +1529,53 @@ namespace SGame.Editor
                 case VehicleKind.Minibus: BuildMinibusBody(root, bodyColor); break;
                 case VehicleKind.Truck:   BuildTruckBody(root, bodyColor);   break;
             }
+
+            // ── Make the car a solid physical object ──────────────────────
+            // Replace the small per-part BoxColliders that CreateCube() left
+            // behind with one clean car-sized hull. The kid's CharacterController
+            // blocks against any non-trigger collider (static or moving via
+            // transform.position), so this alone is enough to stop her walking
+            // through a parked or oncoming car — no Rigidbody required.
+            //
+            // NOTE: We intentionally do NOT add a Rigidbody. Adding a kinematic
+            // Rigidbody changes how Unity processes transform.position changes
+            // and interacts with the editor's interpolation pipeline, which in
+            // earlier tests caused cars to appear stationary on play even
+            // though _progress was advancing each frame.
+            StripCollidersRecursive(root);
+            float halfLengthX, halfWidthZ, height, centerY;
+            switch (kind)
+            {
+                case VehicleKind.Truck:   halfLengthX = 2.4f; halfWidthZ = 1.05f; height = 1.9f; centerY = 0.95f; break;
+                case VehicleKind.Minibus: halfLengthX = 2.2f; halfWidthZ = 0.95f; height = 1.8f; centerY = 0.90f; break;
+                case VehicleKind.Bajaj:   halfLengthX = 1.2f; halfWidthZ = 0.55f; height = 1.5f; centerY = 0.75f; break;
+                case VehicleKind.Sedan:
+                default:                  halfLengthX = 1.9f; halfWidthZ = 0.85f; height = 1.4f; centerY = 0.70f; break;
+            }
+            var hull = root.gameObject.AddComponent<BoxCollider>();
+            hull.center = new Vector3(0f, centerY, 0f);
+            hull.size   = new Vector3(halfLengthX * 2f, height, halfWidthZ * 2f);
+
+            // ── Exhaust trail behind the rear bumper ──────────────────────
+            // DISABLED: Removed white exhaust trails per user request.
+            // var exhaust = new GameObject("Exhaust");
+            // exhaust.transform.SetParent(root, false);
+            // float rearZSign = -1f;            // local rear is along -X for the body builders
+            // exhaust.transform.localPosition = new Vector3(rearZSign * halfLengthX * 0.95f,
+            //                                               0.35f, 0f);
+            // var trail = exhaust.AddComponent<TrailRenderer>();
+            // trail.time = 0.55f;
+            // trail.minVertexDistance = 0.15f;
+            // trail.startWidth = 0.35f;
+            // trail.endWidth = 0.05f;
+            // trail.startColor = new Color(1f, 1f, 1f, 0.55f);
+            // trail.endColor   = new Color(0.85f, 0.85f, 0.85f, 0f);
+            // trail.material = new Material(Shader.Find("Sprites/Default"));
+            // trail.material.color = Color.white;
+            // trail.numCornerVertices = 2;
+            // trail.numCapVertices = 2;
+            // trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // trail.receiveShadows = false;
 
             var mover = root.gameObject.AddComponent<CarMover>();
             mover.Configure(
@@ -1358,6 +1906,10 @@ namespace SGame.Editor
             cc.stepOffset = 0.3f;
             cc.slopeLimit = 45f;
 
+            // Personal-space presence so NPCs yield as the kid approaches.
+            var kidPresence = playerGo.AddComponent<CharacterPresence>();
+            kidPresence.SetRadius(0.4f);
+
             kid = playerGo.AddComponent<KidPlayer>();
             kid.ConfigureBody(visualRoot);
             kid.ConfigureLimbAnimator(playerAnim);
@@ -1529,15 +2081,20 @@ namespace SGame.Editor
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
             cam.clearFlags = CameraClearFlags.Skybox;
-            cam.fieldOfView = 50f;
+            // 65° FOV (was 50°) so the player sees ~24m of road at the curb
+            // instead of ~10m. With 8 cars spread across the 44m loop, this
+            // means 4-5 cars are on-screen at any moment instead of only 1-2.
+            cam.fieldOfView = 65f;
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 250f;
             cam.allowHDR = true;
             cam.allowMSAA = true;
             camGo.AddComponent<AudioListener>();
 
-            var offset = new Vector3(0f, 5.5f, -7.5f);
-            var look = new Vector3(0f, 1.0f, 0f);
+            // Camera sits a bit higher and further back so the whole road
+            // (both lanes) is clearly framed in front of the kid.
+            var offset = new Vector3(0f, 6.5f, -8.5f);
+            var look = new Vector3(0f, 0.9f, 1.5f);
             var follow = camGo.AddComponent<FollowCamera>();
             follow.Configure(target, offset, look);
             camGo.transform.position = target.position + offset;
@@ -1547,9 +2104,19 @@ namespace SGame.Editor
             var ppLayer = camGo.AddComponent<PostProcessLayer>();
             ppLayer.volumeLayer = ~0; // listen to volumes on every layer
             ppLayer.volumeTrigger = camGo.transform;
-            ppLayer.antialiasingMode = PostProcessLayer.Antialiasing.SubpixelMorphologicalAntialiasing;
-            ppLayer.subpixelMorphologicalAntialiasing.quality =
-                SubpixelMorphologicalAntialiasing.Quality.High;
+            if (IsMobileBuildTarget())
+            {
+                // FXAA is ~4x cheaper than SMAA on mobile and good enough at
+                // the resolutions phones render at.
+                ppLayer.antialiasingMode = PostProcessLayer.Antialiasing.FastApproximateAntialiasing;
+                ppLayer.fastApproximateAntialiasing.fastMode = true;
+            }
+            else
+            {
+                ppLayer.antialiasingMode = PostProcessLayer.Antialiasing.SubpixelMorphologicalAntialiasing;
+                ppLayer.subpixelMorphologicalAntialiasing.quality =
+                    SubpixelMorphologicalAntialiasing.Quality.High;
+            }
 #endif
         }
 
@@ -1558,33 +2125,72 @@ namespace SGame.Editor
         private static void BuildNPCs()
         {
             var npcsRoot = new GameObject("NPCs").transform;
+            float sidewalkS = -(RoadWidth / 2f + SidewalkWidth / 2f);
+            float sidewalkN =  (RoadWidth / 2f + SidewalkWidth / 2f);
 
-            // NPC 1 — paces the south sidewalk east of the crosswalk
+            // ── Sidewalk strollers ────────────────────────────────────────
             MakeNPC(npcsRoot, "NPC_South",
-                new Vector3( 7f, 0.55f, -(RoadWidth / 2f + SidewalkWidth / 2f)),
-                new Vector3(20f, 0.55f, -(RoadWidth / 2f + SidewalkWidth / 2f)),
+                new Vector3( 7f, 0.55f, sidewalkS),
+                new Vector3(20f, 0.55f, sidewalkS),
                 bodyColor: new Color(0.85f, 0.30f, 0.40f),
                 headColor: new Color(0.65f, 0.42f, 0.30f),
                 packColor: new Color(0.20f, 0.60f, 0.30f),
                 speed: 1.2f);
 
-            // NPC 2 — paces the north sidewalk west of the crosswalk
             MakeNPC(npcsRoot, "NPC_North",
-                new Vector3(-20f, 0.55f,  (RoadWidth / 2f + SidewalkWidth / 2f)),
-                new Vector3( -7f, 0.55f,  (RoadWidth / 2f + SidewalkWidth / 2f)),
+                new Vector3(-20f, 0.55f, sidewalkN),
+                new Vector3( -7f, 0.55f, sidewalkN),
                 bodyColor: new Color(0.20f, 0.45f, 0.85f),
                 headColor: new Color(0.85f, 0.70f, 0.55f),
                 packColor: new Color(0.80f, 0.30f, 0.30f),
                 speed: 1.4f);
 
-            // NPC 3 — walks the home-path back toward home so it looks lived-in
+            // Two more sidewalk pacers walking in the opposite direction.
+            MakeNPC(npcsRoot, "NPC_SouthW",
+                new Vector3(-22f, 0.55f, sidewalkS - 0.4f),
+                new Vector3(-10f, 0.55f, sidewalkS - 0.4f),
+                bodyColor: new Color(0.20f, 0.65f, 0.55f),
+                headColor: new Color(0.85f, 0.70f, 0.55f),
+                packColor: new Color(0.95f, 0.85f, 0.30f),
+                speed: 1.0f);
+            MakeNPC(npcsRoot, "NPC_NorthE",
+                new Vector3( 10f, 0.55f, sidewalkN - 0.4f),
+                new Vector3( 24f, 0.55f, sidewalkN - 0.4f),
+                bodyColor: new Color(0.75f, 0.65f, 0.20f),
+                headColor: new Color(0.60f, 0.40f, 0.28f),
+                packColor: new Color(0.25f, 0.45f, 0.85f),
+                speed: 1.3f);
+
+            // NPC walking the home-path back to home (gives the kid something
+            // to follow visually on the first leg).
             MakeNPC(npcsRoot, "NPC_HomePath",
                 new Vector3(-1.2f, 0.55f, HomeZ + 4f),
-                new Vector3(-1.2f, 0.55f, -(RoadWidth / 2f + SidewalkWidth + 1.5f)),
+                new Vector3(-1.2f, 0.55f, sidewalkS - 0.4f),
                 bodyColor: new Color(0.55f, 0.30f, 0.75f),
                 headColor: new Color(0.85f, 0.70f, 0.55f),
                 packColor: new Color(0.20f, 0.20f, 0.20f),
                 speed: 1.1f);
+
+            // School-path NPC walking back from school (looks like another
+            // kid heading home from school).
+            MakeNPC(npcsRoot, "NPC_SchoolPath",
+                new Vector3( 1.2f, 0.55f, SchoolZ - 5f),
+                new Vector3( 1.2f, 0.55f, sidewalkN + 0.3f),
+                bodyColor: new Color(0.30f, 0.55f, 0.30f),
+                headColor: new Color(0.85f, 0.70f, 0.55f),
+                packColor: new Color(0.20f, 0.40f, 0.65f),
+                speed: 1.15f);
+
+            // ── Idle "loiter" NPC at the bus stop ─────────────────────────
+            // We give him a tiny back-and-forth path so he visibly shifts
+            // weight without actually walking away.
+            MakeNPC(npcsRoot, "NPC_BusStop",
+                new Vector3(-18.3f, 0.55f, sidewalkS - 0.15f),
+                new Vector3(-17.8f, 0.55f, sidewalkS - 0.15f),
+                bodyColor: new Color(0.65f, 0.30f, 0.30f),
+                headColor: new Color(0.85f, 0.70f, 0.55f),
+                packColor: new Color(0.10f, 0.10f, 0.10f),
+                speed: 0.4f);
         }
 
         private static void MakeNPC(Transform parent, string name, Vector3 a, Vector3 b,
@@ -1598,6 +2204,16 @@ namespace SGame.Editor
             visual.SetParent(go.transform, false);
             visual.localPosition = Vector3.zero;
             var anim = BuildHumanoidVisual(visual, bodyColor, headColor, true, packColor);
+
+            // Solid capsule so the player can't pass THROUGH the NPC. The kid's
+            // CharacterController slides around it naturally.
+            var col = go.AddComponent<CapsuleCollider>();
+            col.height = 1.5f;
+            col.radius = 0.35f;
+            col.center = new Vector3(0f, 0.30f, 0f);
+
+            var presence = go.AddComponent<CharacterPresence>();
+            presence.SetRadius(0.4f);
 
             var npc = go.AddComponent<NPCWalker>();
             npc.Configure(a, b, speed, visual, anim);
@@ -1697,6 +2313,14 @@ namespace SGame.Editor
             visual.SetParent(go.transform, false);
             visual.localPosition = Vector3.zero;
             var anim = BuildHumanoidVisual(visual, bodyColor, headColor, true, packColor);
+
+            var col = go.AddComponent<CapsuleCollider>();
+            col.height = 1.5f;
+            col.radius = 0.35f;
+            col.center = new Vector3(0f, 0.30f, 0f);
+
+            var presence = go.AddComponent<CharacterPresence>();
+            presence.SetRadius(0.4f);
 
             var npc = go.AddComponent<CrosswalkNPCWalker>();
             npc.Configure(path, speed, light, visual, anim);
@@ -1842,8 +2466,9 @@ namespace SGame.Editor
             Color c = WindowDarkColor;
             var w = CreateCube("Window", parent, pos, size, c);
             ApplyPBR(w.GetComponent<MeshRenderer>(), c, 0f, 0.94f);
+            StripCollider(w);
 
-            // Thin window frame around the pane.
+            // Thin window frame around the pane (purely decorative — strip colliders).
             var frameColor = new Color(0.12f, 0.12f, 0.13f);
             float fz = pos.z;
             float fx = pos.x;
@@ -1852,25 +2477,25 @@ namespace SGame.Editor
             // which dimension is thin.
             if (size.z < 0.1f)
             {
-                CreateCube("Frame_T", parent, new Vector3(fx, fy + size.y * 0.5f, fz + 0.001f * Mathf.Sign(fz)),
-                    new Vector3(size.x + 0.06f, 0.04f, size.z + 0.001f), frameColor);
-                CreateCube("Frame_B", parent, new Vector3(fx, fy - size.y * 0.5f, fz + 0.001f * Mathf.Sign(fz)),
-                    new Vector3(size.x + 0.06f, 0.04f, size.z + 0.001f), frameColor);
-                CreateCube("Frame_L", parent, new Vector3(fx - size.x * 0.5f, fy, fz + 0.001f * Mathf.Sign(fz)),
-                    new Vector3(0.04f, size.y, size.z + 0.001f), frameColor);
-                CreateCube("Frame_R", parent, new Vector3(fx + size.x * 0.5f, fy, fz + 0.001f * Mathf.Sign(fz)),
-                    new Vector3(0.04f, size.y, size.z + 0.001f), frameColor);
+                StripCollider(CreateCube("Frame_T", parent, new Vector3(fx, fy + size.y * 0.5f, fz + 0.001f * Mathf.Sign(fz)),
+                    new Vector3(size.x + 0.06f, 0.04f, size.z + 0.001f), frameColor));
+                StripCollider(CreateCube("Frame_B", parent, new Vector3(fx, fy - size.y * 0.5f, fz + 0.001f * Mathf.Sign(fz)),
+                    new Vector3(size.x + 0.06f, 0.04f, size.z + 0.001f), frameColor));
+                StripCollider(CreateCube("Frame_L", parent, new Vector3(fx - size.x * 0.5f, fy, fz + 0.001f * Mathf.Sign(fz)),
+                    new Vector3(0.04f, size.y, size.z + 0.001f), frameColor));
+                StripCollider(CreateCube("Frame_R", parent, new Vector3(fx + size.x * 0.5f, fy, fz + 0.001f * Mathf.Sign(fz)),
+                    new Vector3(0.04f, size.y, size.z + 0.001f), frameColor));
             }
             else if (size.x < 0.1f)
             {
-                CreateCube("Frame_T", parent, new Vector3(fx + 0.001f * Mathf.Sign(fx), fy + size.y * 0.5f, fz),
-                    new Vector3(size.x + 0.001f, 0.04f, size.z + 0.06f), frameColor);
-                CreateCube("Frame_B", parent, new Vector3(fx + 0.001f * Mathf.Sign(fx), fy - size.y * 0.5f, fz),
-                    new Vector3(size.x + 0.001f, 0.04f, size.z + 0.06f), frameColor);
-                CreateCube("Frame_L", parent, new Vector3(fx + 0.001f * Mathf.Sign(fx), fy, fz - size.z * 0.5f),
-                    new Vector3(size.x + 0.001f, size.y, 0.04f), frameColor);
-                CreateCube("Frame_R", parent, new Vector3(fx + 0.001f * Mathf.Sign(fx), fy, fz + size.z * 0.5f),
-                    new Vector3(size.x + 0.001f, size.y, 0.04f), frameColor);
+                StripCollider(CreateCube("Frame_T", parent, new Vector3(fx + 0.001f * Mathf.Sign(fx), fy + size.y * 0.5f, fz),
+                    new Vector3(size.x + 0.001f, 0.04f, size.z + 0.06f), frameColor));
+                StripCollider(CreateCube("Frame_B", parent, new Vector3(fx + 0.001f * Mathf.Sign(fx), fy - size.y * 0.5f, fz),
+                    new Vector3(size.x + 0.001f, 0.04f, size.z + 0.06f), frameColor));
+                StripCollider(CreateCube("Frame_L", parent, new Vector3(fx + 0.001f * Mathf.Sign(fx), fy, fz - size.z * 0.5f),
+                    new Vector3(size.x + 0.001f, size.y, 0.04f), frameColor));
+                StripCollider(CreateCube("Frame_R", parent, new Vector3(fx + 0.001f * Mathf.Sign(fx), fy, fz + size.z * 0.5f),
+                    new Vector3(size.x + 0.001f, size.y, 0.04f), frameColor));
             }
         }
 
@@ -1957,22 +2582,12 @@ namespace SGame.Editor
                 new Vector3(0.08f, 0.08f, 0.60f), metalColor);
             ApplyPBR(arm.GetComponent<MeshRenderer>(), metalColor, 0.7f, 0.55f);
 
-            // The lamp glass — properly emissive so it glows in the bloom pass.
-            var lampColor = new Color(1f, 0.92f, 0.65f);
+            // Daytime lamp fixture — dark glass shade, no emission, no point
+            // light. (Lampposts are off during the day.)
+            var shadeColor = new Color(0.14f, 0.14f, 0.16f);
             var lamp = CreateCube("Lamp", root, new Vector3(0f, 3.95f, 0.65f),
-                new Vector3(0.30f, 0.20f, 0.30f), lampColor);
-            ApplyEmissive(lamp.GetComponent<MeshRenderer>(), lampColor, 4.0f);
-
-            // Real point light so it actually illuminates the sidewalk.
-            var lightGo = new GameObject("LampLight");
-            lightGo.transform.SetParent(root, false);
-            lightGo.transform.localPosition = new Vector3(0f, 3.85f, 0.65f);
-            var pt = lightGo.AddComponent<Light>();
-            pt.type = LightType.Point;
-            pt.color = lampColor;
-            pt.intensity = 2.0f;
-            pt.range = 7f;
-            pt.shadows = LightShadows.None;
+                new Vector3(0.30f, 0.20f, 0.30f), shadeColor);
+            ApplyPBR(lamp.GetComponent<MeshRenderer>(), shadeColor, 0.30f, 0.50f);
         }
 
         // ── Street signs (stop sign + pedestrian crossing sign) ─────────────
@@ -2334,6 +2949,352 @@ namespace SGame.Editor
             return goal;
         }
 
+        // ── Home goal (return trip) ──────────────────────────────────────────
+
+        private static HomeGoal BuildHomeGoal(CrosswalkZone crosswalk)
+        {
+            var go = new GameObject("HomeGoal");
+            // Place the trigger right at the home doorway. HomeZ is the home
+            // building's center; the door faces +Z and is at z = HomeZ + 2.26,
+            // so put the trigger a touch further south so the kid runs INTO it.
+            go.transform.position = new Vector3(0f, 1f, HomeZ + 3f);
+            var box = go.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.size = new Vector3(5f, 2f, 1.6f);
+            var goal = go.AddComponent<HomeGoal>();
+            goal.Configure(crosswalk);
+            return goal;
+        }
+
+        // ── Round-trip controller (school day → return trip) ─────────────────
+
+        private static RoundTripController BuildRoundTripController(
+            SchoolGoal schoolGoal, HomeGoal homeGoal,
+            CrosswalkZone crosswalk, KidPlayer kid, Transform classroomAnchor)
+        {
+            var go = new GameObject("RoundTripController");
+            var ctl = go.AddComponent<RoundTripController>();
+            ctl.Configure(schoolGoal, homeGoal, crosswalk, kid);
+            ctl.SetClassroom(classroomAnchor);
+
+            // Kid comes out the back-east corner of the school (school body
+            // spans x = ±4 and z = SchoolZ ± 2.75; we drop her at x=+5, z=+5
+            // beyond the back wall) facing south.
+            const float backExitX = 5.0f;
+            float backExitZ = SchoolZ + 5f;
+            ctl.SetBackExit(
+                worldPos: new Vector3(backExitX, 1.0f, backExitZ),
+                schoolDurationSeconds: 3.5f);
+
+            // Waypoints — SIDEWALK-ONLY route. The kid only ever touches the
+            // back-of-school concrete walkway, the north sidewalk, the zebra
+            // crossing, the south sidewalk, and the home approach path. She
+            // never walks across grass.
+            //
+            // Layout (north is +Z):
+            //   ┌─ School ──────────────────────────┐
+            //   │              [Back door]          │
+            //   │                                   │
+            //   │      ◄── Back patio ──►           │
+            //   │                          ▲        │
+            //   │                          │  WP1   │  ◄ south on east strip
+            //   └──────────────────────────┼────────┘
+            //                              │
+            //                          ───►│◄───  WP2 (north sidewalk @ x=5)
+            //                              │
+            //                  ◄── WP3 ───►│   westbound along sidewalk
+            //                              │
+            //   ════════ ZEBRA ═══ WP4 ═══ ZEBRA ════════ (crosses road)
+            //                              │
+            //                          WP5 (south sidewalk centre)
+            //                              │
+            //                              ▼
+            //                          WP6 home doorway
+            ctl.SetReturnPath(new[]
+            {
+                new Vector3(backExitX, 1f, 18f),    // south past east face of school
+                new Vector3(backExitX, 1f, 5.5f),   // arrive on north sidewalk (z = sidewalk centre)
+                new Vector3(0f,        1f, 5.5f),   // walk west to crosswalk centre, on sidewalk
+                new Vector3(0f,        1f, -5.5f),  // cross the road; lands on south sidewalk
+                new Vector3(0f,        1f, HomeZ + 3f) // straight south on the home path
+            });
+            return ctl;
+        }
+
+        // ── School interior — classroom diorama ──────────────────────────────
+        //
+        // Built off to the +X side of the main scene (around x=200) so it's
+        // out of camera range during normal play. The kid + follow camera are
+        // teleported there for ~5 seconds while the screen is black; this is
+        // what the player sees fade in: a classroom with a teacher, a
+        // blackboard with a safety tip, six classmates at desks, and the kid
+        // at her own desk. A small popup over the blackboard delivers the
+        // educational message.
+
+        private static Transform BuildSchoolInterior()
+        {
+            const float Cx = 200f;     // far east — out of normal camera range
+            const float Cz = 0f;
+            const float Cy = 0f;
+
+            var root = new GameObject("SchoolInterior").transform;
+            root.position = new Vector3(Cx, Cy, Cz);
+
+            // ── Floor ─────────────────────────────────────────────────────
+            var floorColor = new Color(0.75f, 0.62f, 0.45f);   // wood
+            var floor = CreateCube("Floor", root,
+                new Vector3(0f, 0.05f, 0f),
+                new Vector3(14f, 0.1f, 11f), floorColor);
+            ApplyPBR(floor.GetComponent<MeshRenderer>(), floorColor, 0.0f, 0.35f);
+
+            // ── Walls (4 sides) ────────────────────────────────────────────
+            var wallColor = new Color(0.98f, 0.94f, 0.86f);    // off-white
+            StripCollider(CreateCube("Wall_Back",  root,
+                new Vector3(0f, 1.6f,  5.55f), new Vector3(14f, 3.2f, 0.1f), wallColor));
+            StripCollider(CreateCube("Wall_Front", root,
+                new Vector3(0f, 1.6f, -5.55f), new Vector3(14f, 3.2f, 0.1f), wallColor));
+            StripCollider(CreateCube("Wall_Left",  root,
+                new Vector3(-7.05f, 1.6f, 0f), new Vector3(0.1f, 3.2f, 11.2f), wallColor));
+            StripCollider(CreateCube("Wall_Right", root,
+                new Vector3( 7.05f, 1.6f, 0f), new Vector3(0.1f, 3.2f, 11.2f), wallColor));
+
+            // ── Ceiling (subtle, mostly for ambient occlusion) ──────────────
+            var ceilColor = new Color(0.93f, 0.92f, 0.90f);
+            StripCollider(CreateCube("Ceiling", root,
+                new Vector3(0f, 3.2f, 0f), new Vector3(14f, 0.1f, 11.2f), ceilColor));
+
+            // ── Blackboard at the front of the room ───────────────────────
+            var boardFrame = new Color(0.55f, 0.35f, 0.20f);
+            var boardSurface = new Color(0.10f, 0.20f, 0.16f);
+            StripCollider(CreateCube("BoardFrame", root,
+                new Vector3(0f, 1.8f, -5.45f),
+                new Vector3(5.2f, 1.6f, 0.12f), boardFrame));
+            var board = CreateCube("Board", root,
+                new Vector3(0f, 1.8f, -5.39f),
+                new Vector3(4.9f, 1.4f, 0.05f), boardSurface);
+            StripCollider(board);
+            ApplyPBR(board.GetComponent<MeshRenderer>(), boardSurface, 0.05f, 0.10f);
+
+            // Faux "chalk text" on the board — a few thin white bars suggesting
+            // hand-written lines. Looks like writing without needing real glyphs.
+            var chalkColor = new Color(0.95f, 0.96f, 0.92f);
+            for (int row = 0; row < 3; row++)
+            {
+                float y = 2.20f - row * 0.32f;
+                float w = 3.5f - row * 0.55f;
+                float xOff = (row % 2 == 0) ? -0.2f : 0.3f;
+                StripCollider(CreateCube("ChalkLine", root,
+                    new Vector3(xOff, y, -5.36f),
+                    new Vector3(w, 0.05f, 0.02f), chalkColor));
+            }
+
+            // ── Teacher's desk at the front ────────────────────────────────
+            var deskWood = new Color(0.45f, 0.30f, 0.18f);
+            var teacherDesk = CreateCube("TeacherDesk", root,
+                new Vector3(0f, 0.55f, -3.8f),
+                new Vector3(2.2f, 0.10f, 1.0f), deskWood);
+            ApplyPBR(teacherDesk.GetComponent<MeshRenderer>(), deskWood, 0.05f, 0.30f);
+            StripCollider(CreateCube("TeacherLegFL", root,
+                new Vector3(-0.95f, 0.27f, -4.2f), new Vector3(0.08f, 0.55f, 0.08f), deskWood));
+            StripCollider(CreateCube("TeacherLegFR", root,
+                new Vector3( 0.95f, 0.27f, -4.2f), new Vector3(0.08f, 0.55f, 0.08f), deskWood));
+            StripCollider(CreateCube("TeacherLegBL", root,
+                new Vector3(-0.95f, 0.27f, -3.4f), new Vector3(0.08f, 0.55f, 0.08f), deskWood));
+            StripCollider(CreateCube("TeacherLegBR", root,
+                new Vector3( 0.95f, 0.27f, -3.4f), new Vector3(0.08f, 0.55f, 0.08f), deskWood));
+
+            // ── Teacher standing in front of the board ────────────────────
+            var teacherGo = new GameObject("Teacher");
+            teacherGo.transform.SetParent(root, false);
+            teacherGo.transform.localPosition = new Vector3(-2.4f, 0f, -3.0f);
+            teacherGo.transform.localRotation = Quaternion.Euler(0f, 80f, 0f); // facing students
+            var tVisual = new GameObject("VisualRoot").transform;
+            tVisual.SetParent(teacherGo.transform, false);
+            BuildHumanoidVisual(tVisual,
+                bodyColor: new Color(0.65f, 0.20f, 0.30f),     // red dress
+                skinColor: new Color(0.85f, 0.70f, 0.55f),
+                hasBackpack: false,
+                backpackColor: Color.gray,
+                hairColor: new Color(0.20f, 0.12f, 0.06f),
+                pantsColor: new Color(0.20f, 0.18f, 0.14f));
+
+            // ── Student desks in a 3 × 2 grid + the kid's reserved desk ───
+            // Layout: rows along Z, columns along X.
+            //   Row 1 (closest to teacher, z=-2):  2 student desks + KID's desk
+            //   Row 2 (z=0):                        3 student desks
+            //   Row 3 (z=2):                        2 student desks
+            BuildStudentDesk(root, new Vector3(-2.2f, 0f, -1.5f), studentNumber: 0);
+            BuildStudentDesk(root, new Vector3( 0.0f, 0f, -1.5f), studentNumber: 1);
+            BuildKidDeskOnly  (root, new Vector3( 2.2f, 0f, -1.5f)); // empty — the player's desk
+            BuildStudentDesk(root, new Vector3(-2.2f, 0f,  0.5f), studentNumber: 2);
+            BuildStudentDesk(root, new Vector3( 0.0f, 0f,  0.5f), studentNumber: 3);
+            BuildStudentDesk(root, new Vector3( 2.2f, 0f,  0.5f), studentNumber: 4);
+            BuildStudentDesk(root, new Vector3(-1.1f, 0f,  2.5f), studentNumber: 5);
+            BuildStudentDesk(root, new Vector3( 1.1f, 0f,  2.5f), studentNumber: 6);
+
+            // ── Soft warm overhead light ──────────────────────────────────
+            var lightGo = new GameObject("RoomLight");
+            lightGo.transform.SetParent(root, false);
+            lightGo.transform.localPosition = new Vector3(0f, 3.0f, 0f);
+            var lt = lightGo.AddComponent<Light>();
+            lt.type = LightType.Point;
+            lt.color = new Color(1.0f, 0.93f, 0.82f);
+            lt.intensity = 1.6f;
+            lt.range = 14f;
+            lt.shadows = LightShadows.None;   // mobile-friendly
+
+            // ── Anchor the kid is teleported TO (her desk position) ───────
+            // She stands BESIDE her desk facing the board (i.e., facing -Z).
+            var kidAnchor = new GameObject("KidClassroomAnchor").transform;
+            kidAnchor.SetParent(root, false);
+            kidAnchor.localPosition = new Vector3(2.2f, 1.0f, -1.0f);
+            kidAnchor.localRotation = Quaternion.Euler(0f, 180f, 0f);  // face the board
+
+            return kidAnchor;
+        }
+
+        // ── Single student desk + a seated student ───────────────────────────
+        private static void BuildStudentDesk(Transform parent, Vector3 localPos, int studentNumber)
+        {
+            BuildDeskOnly(parent, localPos);
+
+            // Student colour palette — deterministic by student number so each
+            // desk has a consistent occupant.
+            var rng = new System.Random(studentNumber * 13 + 7);
+            Color body = Color.HSVToRGB((float)rng.NextDouble(), 0.55f, 0.85f);
+            Color hair = new Color(
+                0.15f + 0.20f * (float)rng.NextDouble(),
+                0.10f + 0.15f * (float)rng.NextDouble(),
+                0.08f + 0.05f * (float)rng.NextDouble());
+            Color pants = new Color(
+                0.25f + 0.20f * (float)rng.NextDouble(),
+                0.25f + 0.15f * (float)rng.NextDouble(),
+                0.45f + 0.20f * (float)rng.NextDouble());
+
+            // Build a SEATED humanoid: legs are folded under the desk, the body
+            // sits 0.45m off the floor. We do this by giving the visual root
+            // a low local position; the procedural humanoid is otherwise normal.
+            var student = new GameObject("Student_" + studentNumber);
+            student.transform.SetParent(parent, false);
+            student.transform.localPosition = localPos + new Vector3(0f, 0.05f, 0.05f);
+            student.transform.localRotation = Quaternion.Euler(0f, 0f, 0f); // face the teacher (-Z = forward in our system)
+            var visual = new GameObject("VisualRoot").transform;
+            visual.SetParent(student.transform, false);
+            visual.localPosition = new Vector3(0f, -0.18f, 0f); // seated: drop the body
+            BuildHumanoidVisual(visual,
+                bodyColor: body,
+                skinColor: new Color(0.82f, 0.66f, 0.50f),
+                hasBackpack: false,
+                backpackColor: Color.gray,
+                hairColor: hair,
+                pantsColor: pants);
+        }
+
+        private static void BuildKidDeskOnly(Transform parent, Vector3 localPos)
+        {
+            BuildDeskOnly(parent, localPos);
+            // A nameplate so the kid's desk reads as HER spot.
+            var plate = CreateCube("Nameplate", parent,
+                localPos + new Vector3(0f, 0.62f, -0.05f),
+                new Vector3(0.5f, 0.08f, 0.02f),
+                new Color(1f, 0.85f, 0.20f));
+            StripCollider(plate);
+            ApplyEmissive(plate.GetComponent<MeshRenderer>(), new Color(1f, 0.85f, 0.20f), 0.8f);
+        }
+
+        private static void BuildDeskOnly(Transform parent, Vector3 localPos)
+        {
+            var deskWood = new Color(0.62f, 0.45f, 0.28f);
+            var top = CreateCube("DeskTop", parent,
+                localPos + new Vector3(0f, 0.60f, 0f),
+                new Vector3(1.0f, 0.05f, 0.55f), deskWood);
+            ApplyPBR(top.GetComponent<MeshRenderer>(), deskWood, 0.05f, 0.30f);
+            StripCollider(top);
+            // Legs
+            for (int sx = -1; sx <= 1; sx += 2)
+                for (int sz = -1; sz <= 1; sz += 2)
+                {
+                    StripCollider(CreateCube("DeskLeg", parent,
+                        localPos + new Vector3(sx * 0.42f, 0.30f, sz * 0.22f),
+                        new Vector3(0.05f, 0.60f, 0.05f), deskWood));
+                }
+            // Chair (just a seat + back, no legs to keep it visually simple)
+            var chairWood = new Color(0.45f, 0.30f, 0.18f);
+            StripCollider(CreateCube("ChairSeat", parent,
+                localPos + new Vector3(0f, 0.42f, 0.42f),
+                new Vector3(0.55f, 0.05f, 0.45f), chairWood));
+            StripCollider(CreateCube("ChairBack", parent,
+                localPos + new Vector3(0f, 0.72f, 0.62f),
+                new Vector3(0.55f, 0.55f, 0.04f), chairWood));
+        }
+
+        // ── Floating 3D arrow ────────────────────────────────────────────────
+
+        private static ObjectiveArrow BuildObjectiveArrow(Transform follow)
+        {
+            var root = new GameObject("ObjectiveArrow");
+
+            // "Body" container that gets rotated to point at the target.
+            var arrow = new GameObject("Arrow").transform;
+            arrow.SetParent(root.transform, false);
+
+            // Build a stylized arrow: a long flat shaft + a wider triangular
+            // tip. Both use an emissive yellow material so it glows above the
+            // kid's head against any backdrop.
+            var yellow = new Color(1.00f, 0.85f, 0.20f);
+
+            var shaft = CreateCube("Shaft", arrow, new Vector3(0f, 0f, -0.20f),
+                new Vector3(0.18f, 0.18f, 0.70f), yellow);
+            Object.DestroyImmediate(shaft.GetComponent<Collider>());
+            ApplyEmissive(shaft.GetComponent<MeshRenderer>(), yellow, 1.6f);
+
+            // Tip = stretched cube rotated 45° to look like a chevron.
+            var tip = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            tip.name = "Tip";
+            tip.transform.SetParent(arrow, false);
+            tip.transform.localPosition = new Vector3(0f, 0f, 0.35f);
+            tip.transform.localRotation = Quaternion.Euler(0f, 45f, 0f);
+            tip.transform.localScale = new Vector3(0.55f, 0.18f, 0.55f);
+            Object.DestroyImmediate(tip.GetComponent<Collider>());
+            ApplyURPColor(tip.GetComponent<MeshRenderer>(), yellow);
+            ApplyEmissive(tip.GetComponent<MeshRenderer>(), yellow, 1.6f);
+
+            // Subtle ring on the ground for extra visibility (a thin yellow ring
+            // hovering just below the arrow head).
+            var ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            ring.name = "Ring";
+            ring.transform.SetParent(root.transform, false);
+            ring.transform.localPosition = new Vector3(0f, -0.25f, 0f);
+            ring.transform.localScale = new Vector3(0.45f, 0.025f, 0.45f);
+            Object.DestroyImmediate(ring.GetComponent<Collider>());
+            ApplyURPColor(ring.GetComponent<MeshRenderer>(), yellow);
+            ApplyEmissive(ring.GetComponent<MeshRenderer>(), yellow, 1.2f);
+
+            var oa = root.AddComponent<ObjectiveArrow>();
+            oa.Configure(follow, arrow);
+            return oa;
+        }
+
+        // ── Invisible target anchors the arrow points at ─────────────────────
+
+        private static (Transform front, Transform back, Transform home) BuildObjectiveTargets()
+        {
+            var parent = new GameObject("ObjectiveTargets").transform;
+            var front = new GameObject("Target_SchoolFront").transform;
+            front.SetParent(parent, false);
+            front.position = new Vector3(0f, 1.2f, SchoolZ - 3.0f);
+
+            var back = new GameObject("Target_SchoolBack").transform;
+            back.SetParent(parent, false);
+            back.position = new Vector3(0f, 1.2f, SchoolZ + 3.0f);
+
+            var home = new GameObject("Target_Home").transform;
+            home.SetParent(parent, false);
+            home.position = new Vector3(0f, 1.2f, HomeZ + 2.5f);
+
+            return (front, back, home);
+        }
+
         // ── Car reporter ─────────────────────────────────────────────────────
 
         private static void BuildCarReporter(MissionController controller,
@@ -2347,7 +3308,7 @@ namespace SGame.Editor
         // ── HUD — Stitch "Safe Steps Addis" redesign ─────────────────────────
 
         private static void BuildHUD(MissionController controller, TrafficLight3D light,
-            CrosswalkZone zone, SchoolGoal goal)
+            CrosswalkZone zone, SchoolGoal goal, RoundTripController roundTrip)
         {
             var esGo = new GameObject("EventSystem");
             esGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
@@ -2382,10 +3343,10 @@ namespace SGame.Editor
                 out Text titleLabel);
 
             // ── Bottom action bar: WAIT (yellow) + CROSS (green) ─────────
-            var waitBtn = MakeStitchPillButton(canvasGo.transform, "WaitButton", "WAIT",
+            var waitBtn = MakeStitchPillButton(canvasGo.transform, "WaitButton", "STOP",
                 new Vector2(0.06f, 0.05f), new Vector2(0.49f, 0.13f),
                 UiYellow, UiYellowShadow, UiNavy);
-            var crossBtn = MakeStitchPillButton(canvasGo.transform, "CrossButton", "CROSS",
+            var crossBtn = MakeStitchPillButton(canvasGo.transform, "CrossButton", "GO",
                 new Vector2(0.51f, 0.05f), new Vector2(0.94f, 0.13f),
                 UiGreen, UiGreenShadow, Color.white);
 
@@ -2397,6 +3358,9 @@ namespace SGame.Editor
             var failureOverlay = BuildFailureOverlay(canvasGo.transform,
                 out Text fTitle, out Text fMsg, out Button retryBtn);
 
+            // ── Objective banner (transient, slides in from the top) ──────
+            var objBanner = BuildObjectiveBanner(canvasGo.transform, out Text objText);
+
             var hud = canvasGo.AddComponent<WalkHUD>();
             hud.Configure(controller, light, zone, goal,
                 titleLabel, coinsLabel,
@@ -2405,6 +3369,40 @@ namespace SGame.Editor
                 crossBtn, waitBtn,
                 winOverlay, rTitle, rScore, rStars, rCoins,
                 failureOverlay, fTitle, fMsg, retryBtn);
+            // Wire the round-trip controller so the result panel only fires
+            // when she arrives back HOME, not when she first reaches school.
+            hud.ConfigureRoundTrip(roundTrip);
+            hud.ConfigureObjectiveBanner(objBanner, objText);
+        }
+
+        // ── Objective banner: floating pill at the top of the screen ─────────
+
+        private static GameObject BuildObjectiveBanner(Transform parent, out Text bannerText)
+        {
+            // Centered banner near the top, wide pill on Stitch UI.
+            var pill = MakePanel(parent, "ObjectiveBanner",
+                new Vector2(0.10f, 0.69f), new Vector2(0.90f, 0.76f),
+                new Color(0.05f, 0.10f, 0.18f, 0.92f));
+            ApplyRounded(pill.GetComponent<Image>(), 0.55f);
+
+            var textGo = new GameObject("Label");
+            textGo.transform.SetParent(pill.transform, false);
+            var rt = textGo.AddComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = new Vector2(24f, 6f);
+            rt.offsetMax = new Vector2(-24f, -6f);
+
+            bannerText = textGo.AddComponent<Text>();
+            bannerText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            bannerText.fontSize = 56;
+            bannerText.color = new Color(1f, 0.95f, 0.85f);
+            bannerText.alignment = TextAnchor.MiddleCenter;
+            bannerText.text = "Walk to school safely!";
+
+            // Start hidden — WalkHUD will fade it in/out on demand.
+            pill.gameObject.SetActive(false);
+            return pill.gameObject;
         }
 
         // ── Traffic-light widget (3 stacked bulbs in a dark pill) ────────────
@@ -2506,7 +3504,7 @@ namespace SGame.Editor
             titleLabel.fontStyle = FontStyle.Bold;
             titleLabel.raycastTarget = false;
 
-            var body = MakeLabel(card, "Body", "Wait for the light to turn RED for cars,\nthen tap CROSS.",
+            var body = MakeLabel(card, "Body", "Wait for the light to turn RED for cars,\nthen tap GO.",
                 new Vector2(0.06f, 0.06f), new Vector2(0.96f, 0.62f),
                 34, TextAnchor.UpperLeft, UiNavy);
             body.raycastTarget = false;
@@ -2812,6 +3810,29 @@ namespace SGame.Editor
             go.transform.localScale = scale;
             ApplyURPColor(go.GetComponent<MeshRenderer>(), color);
             return go.transform;
+        }
+
+        // Strip the collider off a primitive — used for purely decorative
+        // meshes that should never participate in physics (thin road
+        // markings, signs, door knobs, etc). Reduces physics overhead and
+        // eliminates clipping edge cases where the kid's CharacterController
+        // could snag on a 3-cm decal.
+        private static void StripCollider(Transform t)
+        {
+            if (t == null) return;
+            var col = t.GetComponent<Collider>();
+            if (col != null) Object.DestroyImmediate(col);
+        }
+
+        private static void StripCollidersRecursive(Transform t)
+        {
+            if (t == null) return;
+            foreach (var c in t.GetComponentsInChildren<Collider>(true))
+            {
+                // Keep triggers (coins, crosswalk zones, goals).
+                if (c.isTrigger) continue;
+                Object.DestroyImmediate(c);
+            }
         }
 
         private static Transform CreatePlane(string name, Transform parent, Vector3 localPos,

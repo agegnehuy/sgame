@@ -25,9 +25,8 @@ namespace SGame.Gameplay.Walk
         [SerializeField] private float gravity = -15f;
 
         [Header("State")]
-        [Tooltip("Whether the kid is currently running. Starts TRUE — she auto-starts " +
-                 "running as soon as the scene loads. STOP pauses her; GO resumes.")]
-        [SerializeField] private bool walkingAllowed = true;
+        [Tooltip("Whether the kid is currently running. Starts FALSE — player must tap GO to start.")]
+        [SerializeField] private bool walkingAllowed = false;
 
         [Header("Debug controls (editor only)")]
         [SerializeField] private bool allowKeyboardInput = true;
@@ -76,10 +75,8 @@ namespace SGame.Gameplay.Walk
                 _bodyBase = bodyTransform.localPosition;
                 _bodyBaseRotation = bodyTransform.localRotation;
             }
-            // Force auto-start every time the scene loads, regardless of any
-            // stale serialized value in the scene file. STOP/GO still work
-            // after start because they're set by user input AFTER Awake runs.
-            walkingAllowed = true;
+            // Force auto-start to FALSE so player must tap GO to start walking.
+            walkingAllowed = false;
 
             // Defensive guards — if the scene was last built with an older
             // version of this script that didn't have these fields, Unity
@@ -185,6 +182,9 @@ namespace SGame.Gameplay.Walk
                 inp.y = Input.GetAxisRaw("Vertical");
             }
 
+            // Constrain to path: disable horizontal movement to prevent going off path
+            inp.x = 0f;
+            
             if (!walkingAllowed && inp.y > 0f) inp.y = 0f;
 
             bool wantsToMove;
