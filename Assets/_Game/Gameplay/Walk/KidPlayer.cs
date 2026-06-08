@@ -18,15 +18,16 @@ namespace SGame.Gameplay.Walk
         [Tooltip("Acceleration in m/s² while ramping UP to walkSpeed. Higher = snappier start.")]
         [SerializeField] private float acceleration = 22f;
         [Tooltip("Deceleration in m/s² while ramping DOWN to a stop. Higher = harder stop.")]
-        [SerializeField] private float deceleration = 40f;
+        [SerializeField] private float deceleration = 26f;
         [SerializeField] private float turnSpeedDegPerSec = 540f;
         [Tooltip("Higher = faster rotation easing on top of turnSpeedDegPerSec. 8-14 is good.")]
         [SerializeField] private float rotationEaseSpeed = 11f;
         [SerializeField] private float gravity = -15f;
 
         [Header("State")]
-        [Tooltip("Whether the kid is currently running. Starts FALSE — player must tap GO to start.")]
-        [SerializeField] private bool walkingAllowed = false;
+        [Tooltip("Whether the kid is currently running. Starts TRUE — she auto-starts " +
+                 "running as soon as the scene loads. STOP pauses her; GO resumes.")]
+        [SerializeField] private bool walkingAllowed = true;
 
         [Header("Debug controls (editor only)")]
         [SerializeField] private bool allowKeyboardInput = true;
@@ -75,8 +76,10 @@ namespace SGame.Gameplay.Walk
                 _bodyBase = bodyTransform.localPosition;
                 _bodyBaseRotation = bodyTransform.localRotation;
             }
-            // Force auto-start to FALSE so player must tap GO to start walking.
-            walkingAllowed = false;
+            // Force auto-start every time the scene loads, regardless of any
+            // stale serialized value in the scene file. STOP/GO still work
+            // after start because they're set by user input AFTER Awake runs.
+            walkingAllowed = true;
 
             // Defensive guards — if the scene was last built with an older
             // version of this script that didn't have these fields, Unity
