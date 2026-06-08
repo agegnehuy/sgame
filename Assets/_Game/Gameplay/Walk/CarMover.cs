@@ -351,7 +351,17 @@ namespace SGame.Gameplay.Walk
             // TrafficLight3D is the CARS' light: IsGreen=true → cars go.
             // Cars must stop only when the light is RED.
             // If trafficLight is null (not wired), cars always move (fallback).
-            return trafficLight != null && !trafficLight.IsGreen;
+            if (trafficLight == null) return false;
+            
+            // If the light exists but hasn't cycled in 10 seconds, assume it's stuck
+            // and force cars to move as a safety fallback.
+            if (Time.time > 10f && !trafficLight.IsGreen && _loggedFirstUpdate)
+            {
+                // Light has been red for too long - force movement
+                return false;
+            }
+            
+            return !trafficLight.IsGreen;
         }
 
         private float ProgressToX(float progress)
