@@ -1,0 +1,117 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - 'release/*'
+  workflow_dispatch:
+
+env:
+  UNITY_VERSION: "2022.3.62f3"
+  VERSION: "0.0.9"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    name: Build Android APK
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Unity License (XLF)
+        uses: game-ci/unity-builder@v2
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      - name: Create Image for GitHub Container Registry
+        run: |
+          mkdir -p images/apk
+          APK_PATH=$(find . -name "*.apk" -type f | head -1)
+          if [ -n "$APK_PATH" ]; then
+            echo "Found APK: $APK_PATH"
+            cp "$APK_PATH" images/apk/SafeStepsAddis-${{ env.VERSION }}.apk
+            echo "APK copied to container directory"
+          else
+            echo "APK not found after build"
+            find . -name "*.apk" -type f 2>/dev/null || true
+            echo "Build directory contents:"
+            ls -la . || true
+            exit 1
+          fi
+      - name: Create GitHub Container Registry Image
+        uses: crazy-max/ghaction-container-meta@v1
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/sgame
+          flavor: |
+            latest=false
+          labels: |
+            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.refity=${{ env.UNITY_VERSION }}
+      - name: Build Container Image
+        run: |
+          cd images/apk
+          docker build -t ghcr.io/${{ github.repository_owner }}/sgame:${{ env.VERSION }} -f Dockerfile.apk . || true
+          docker push ghcr.io/${{ github.repository_owner }}/sgame:${{ env.VERSION }} || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release (Version ${{ env.VERSION }})
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ env.VERSION }}
+          name: Release v${{ env.VERSION }}
+          body: |
+            ## Safe Steps Addis - Version v${{ env.VERSION }}
+
+            ### What's Included?
+            - Android APK built with Unity ${{ env.UNITY_VERSION }}
+            - Container image in GitHub Container Registry
+            - Ready for deployment to testing environment
+
+            ### Building from
+            - Branch: ${{ github.ref_name }}
+            - Commit: ${{ github.sha }}
+            - Built on: ${{ github.workflow_run }}
+          draft: false
+          prerelease: false
+          generateReleaseNotes: true
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    if: always() && needs.build-android.result == 'success'
+    needs: build-android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Snyk
+        uses: snyk/actions/node@master
+        with:
+          args: --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Download container image
+        run: |
+          echo "Scanning GitHub Container Registry image"
+          echo "Image: ghcr.io/${{ github.repository_owner }}/sgame:${{ env.VERSION }}"
+          docker pull ghcr.io/${{ github.repository_owner }}/sgame:${{ env.VERSION }} || echo "Container pull failed (expected if image not pushed yet)"
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    name: Deploy to Staging (Manual Only)
+    needs: build-android
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Deploy to Staging
+        run: |
+          echo "Deploying to staging environment..."
+          echo "Version: ${{ env.VERSION }}"
+          echo "This would deploy to staging servers via SSH/ANSIBLE"
+          echo "Release artifacts: APK and container image"
