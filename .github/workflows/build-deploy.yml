@@ -1,0 +1,160 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  UNITY_VERSION: "2022.3.62f3"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Build Configuration
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Unity
+        uses: game-ci/unity-test-runner@v2
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  build-android:
+    needs: validate
+    runs-on: ubuntu-latest
+    name: Build Android APK
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Unity
+        uses: game-ci/unity-builder@v2
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+          unityVersionType: patch
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      - name: Get APK Path
+        id: apk-path
+        run: |
+          APK_PATH=$(find ${GITHUB_WORKSPACE}/build -name "*.apk" | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "APK not found after build"
+            find ${GITHUB_WORKSPACE} -name "*.apk" 2>/dev/null
+            exit 1
+          fi
+          echo "apk_path=${APK_PATH}" >> $GITHUB_OUTPUT
+          echo "APK found at: ${APK_PATH}"
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-apk
+          path: ${{ steps.apk-path.outputs.apk_path }}
+          retention-days: 7
+
+  create-release:
+    needs: build-android
+    runs-on: ubuntu-latest
+    name: Create GitHub Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get current version
+        id: version
+        run: |
+          current_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.9")
+          echo "Current version: ${current_tag}"
+          if [[ "$current_tag" == v* ]]; then
+            version="${current_tag#v}"
+          else:
+            version="${current_tag}"
+          fi
+          major=$(echo "$version" | cut -d. -f1)
+          minor=$(echo "$version" | cut -d. -f2)
+          patch=$(echo "$version" | cut -d. -f3)
+          new_patch=$((patch + 1))
+          new_version="${major}.${minor}.${new_patch}"
+          echo "New version will be: ${new_version}"
+          echo "version=${new_version}" >> $GITHUB_OUTPUT
+      - name: Download APK
+        uses: actions/download-artifact@v3
+        with:
+          name: android-apk
+          path: apk
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            ## Safe Steps Addis v${{ steps.version.outputs.version }}
+
+            - Automated build from main branch
+            - Android APK built with Unity ${{ env.UNITY_VERSION }}
+            - Ready for testing and deployment
+          draft: false
+          prerelease: false
+          artifacts: apk/*.apk
+          skipIfExisting: true
+  - name: Create Image for Container Registry
+        run: |
+          mkdir -p apk
+          APK_PATH=$(find . -name "*.apk" -type f | head -1)
+          if [ -n "$APK_PATH" ]; then
+            echo "Found APK: $APK_PATH"
+            mv "$APK_PATH" apk/
+          else
+            echo "APK not found in build directory"
+            find . -name "*.apk" -type f 2>/dev/null
+          fi
+      - name: Update version in config
+        run: |
+          sed -i "s/0.0.9/${{ steps.version.outputs.version }}/g" plan.md
+          sed -i "s/0.0.9/${{ steps.version.outputs.version }}/g" Docs/MVP_OVERVIEW.md
+          sed -i "s/Version:.*/Version: ${{ steps.version.outputs.version }}/g" ProjectSettings/ProjectSettings.asset || true
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add plan.md Docs/MVP_OVERVIEW.md ProjectSettings/ProjectSettings.asset || true
+          git commit -m "Bump version to ${{ steps.version.outputs.version }}"
+          git push
+
+  deploy-staging:
+    needs: build-android
+    runs-on: ubuntu-latest
+    name: Deploy to Staging Environment
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup SSH
+        uses: webfactory/ssh-key@v0.5.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Deploy to Staging
+        run: |
+          ssh -o StrictHostKeyChecking=no user@staging-server "cd /app && git checkout main && git pull"
+          ssh -o StrictHostKeyChecking=no user@staging-server "cd /app && docker-compose pull"
+          ssh -o StrictHostKeyChecking=no user@staging-server "cd /app && docker-compose up -d --force-recreate"
+
+  security-scan:
+    needs: validate
+    runs-on: ubuntu-latest
+    name: Security Scan
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Snyk
+        uses: snyk/actions/node@master
+        with:
+          args: --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

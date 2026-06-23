@@ -204,4 +204,4 @@ A child opens the app on an Android phone. They select their profile and see the
 
 ---
 
-*Built for Safe Steps Addis | Target: Ethiopia, Ages 8–14 | Platform: Android (offline)*
+*Built for Safe Steps Addis | Target: Ethiopia, Ages 8–14 | Platform: Android (offline) | Version: v0.0.9*

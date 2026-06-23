@@ -1,0 +1,93 @@
+name: Create Container Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to tag the container images'
+        required: true
+        default: '0.0.9'
+      tag:
+        description: 'Additional tag for the image'
+        required: false
+        default: ''
+
+env:
+  UNITY_VERSION: "2022.3.62f3"
+
+jobs:
+  create-images:
+    runs-on: ubuntu-latest
+    name: Create Container Images
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Download APK Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: android-apk
+          path: apk
+      - name: List Downloaded Files
+        run: |
+          echo "=== Downloaded APK Files ==="
+          find apk -type f -name "*.apk" | head -10
+          echo "=== APK Details ==="
+          ls -la apk/ || echo "No APK files found"
+      - name: Setup Docker BuildKit
+        run: |
+          echo "{"buildkit" : {"standalone": {"insecure-entitlements" : ["network.host"]}} }" > ~/.docker/config.json
+      - name: Build and Push AP APK Container
+        run: |
+          cd apk
+          APK_NAME=$(ls *.apk | head -1)
+          if [ -n "$APK_NAME" ]; then
+            echo "Building container with APK: $APK_NAME"
+            docker build -f /home/agih/Desktop/sgame/images/Dockerfile.apk . -t sgame/app:${{ github.event.inputs.version }} --build-arg APK_NAME="$APK_NAME"
+            docker tag sgame/app:${{ github.event.inputs.version }} sgame/app:latest
+            echo "Docker images built successfully"
+            docker images | grep sgame
+          else
+            echo "ERROR: No APK file found for container build"
+            exit 1
+          fi
+        env:
+          DOCKER_BUILDKIT: 1
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push Container Images
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            docker push sgame/app:${{ github.event.inputs.version }}
+            docker push sgame/app:latest
+            docker tag sgame/app:${{ github.event.inputs.version }} sgame/app:${{ github.event.inputs.tag }}
+            docker push sgame/app:${{ github.event.inputs.tag }}
+          else
+            docker push sgame/app:${{ github.event.inputs.version }}
+            docker push sgame/app:latest
+          fi
+      - name: Create Container Registry Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: container-${{ github.event.inputs.version }}
+          name: Container Registry Release v${{ github.event.inputs.version }}
+          body: |
+            ## Container Images for Safe Steps Addis v${{ github.event.inputs.version }}
+
+            ### Images Built
+            - `sgame/app:${{ github.event.inputs.version }}` (version-specific)
+            - `sgame/app:latest` (latest tag)
+
+            ### APK Details
+            - Built with Unity ${{ env.UNITY_VERSION }}
+            - Platform: Android
+            - Version: ${{ github.event.inputs.version }}
+
+            ### Usage
+            ```bash
+            docker pull sgame/app:${{ github.event.inputs.version }}
+            docker run -p 8080:8080 sgame/app:${{ github.event.inputs.version }}
+            ```
+          draft: false
+          prerelease: false
+          artifactErrorsFailBuild: false
