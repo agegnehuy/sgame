@@ -1,0 +1,5 @@
+/home/agih/Desktop/sgame/.utmp/Debug/1b5a6e60/armeabi-v7a/CMakeFiles/edit_cache.dir
+/home/agih/Desktop/sgame/.utmp/Debug/1b5a6e60/armeabi-v7a/CMakeFiles/rebuild_cache.dir
+/home/agih/Desktop/sgame/.utmp/Debug/1b5a6e60/armeabi-v7a/FramePacing/CMakeFiles/swappywrapper.dir
+/home/agih/Desktop/sgame/.utmp/Debug/1b5a6e60/armeabi-v7a/FramePacing/CMakeFiles/edit_cache.dir
+/home/agih/Desktop/sgame/.utmp/Debug/1b5a6e60/armeabi-v7a/FramePacing/CMakeFiles/rebuild_cache.dir
