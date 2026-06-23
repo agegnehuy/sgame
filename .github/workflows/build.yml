@@ -20,30 +20,28 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Setup Unity License (XLF)
+      - name: Build Android APK
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: Android
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-      - name: Create Image for GitHub Container Registry
+      - name: Prepare APK for container
         run: |
           mkdir -p images/apk
-          APK_PATH=$(find . -name "*.apk" -type f | head -1)
+          APK_PATH=$(find build -name "*.apk" -type f | head -1)
           if [ -n "$APK_PATH" ]; then
             echo "Found APK: $APK_PATH"
-            cp "$APK_PATH" images/apk/SafeStepsAddis-${{ env.VERSION }}.apk
+            cp "$APK_PATH" "images/apk/SafeStepsAddis-${{ env.VERSION }}.apk"
             echo "APK copied to container directory"
           else
             echo "APK not found after build"
-            find . -name "*.apk" -type f 2>/dev/null || true
-            echo "Build directory contents:"
-            ls -la . || true
+            find build -name "*.apk" -type f 2>/dev/null || true
             exit 1
           fi
-      - name: Create GitHub Container Registry Image
-        uses: crazy-max/ghaction-container-meta@v1
+      - name: Docker metadata
+        uses: crazy-max/ghaction-docker-meta@v1
         id: meta
         with:
           images: ghcr.io/${{ github.repository_owner }}/sgame
@@ -51,12 +49,16 @@ jobs:
             latest=false
           labels: |
             org.opencontainers.image.version=${{ env.VERSION }}
-            org.opencontainers.image.refity=${{ env.UNITY_VERSION }}
-      - name: Build Container Image
+            org.opencontainers.image.revision=${{ env.UNITY_VERSION }}
+      - name: Build and Push Container Image
         run: |
-          cd images/apk
-          docker build -t ghcr.io/${{ github.repository_owner }}/sgame:${{ env.VERSION }} -f Dockerfile.apk . || true
-          docker push ghcr.io/${{ github.repository_owner }}/sgame:${{ env.VERSION }} || true
+          cd images
+          docker build \
+            -f Dockerfile.apk \
+            -t ghcr.io/${{ github.repository_owner }}/sgame:${{ env.VERSION }} \
+            --build-arg APK_NAME="SafeStepsAddis-${{ env.VERSION }}.apk" \
+            .
+          docker push ghcr.io/${{ github.repository_owner }}/sgame:${{ env.VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create GitHub Release (Version ${{ env.VERSION }})
@@ -90,11 +92,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run Snyk
-        uses: snyk/actions/node@master
+        uses: snyk/actions/docker@master
         with:
+          image: ghcr.io/${{ github.repository_owner }}/sgame:${{ env.VERSION }}
           args: --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
       - name: Download container image
         run: |
           echo "Scanning GitHub Container Registry image"

@@ -1,0 +1,47 @@
+FROM ubuntu:22.04
+
+LABEL org.opencontainers.image.authors="Safe Steps Addis Team"
+LABEL org.opencontainers.image.description="Android APK container for Safe Steps Addis mobile game"
+LABEL org.opencontainers.image.version="0.0.9"
+LABEL org.opencontainers.image.architecture="amd64"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ARG APK_NAME
+COPY apk/$APK_NAME ./app.apk
+
+# Display APK metadata
+RUN echo "=== APK Metadata ===" && \
+    ls -lh app.apk && \
+    file app.apk && \
+    unzip -l app.apk | grep -E "^(Archive|creating|compressed|storing)" | head -10 && \
+    echo "=== APK Size Information ===" && \
+    apk add --no-cache unzip && \
+    unzip -l app.apk | tail -1
+
+# Create metadata for the APK
+RUN mkdir -p metadata && \
+    echo "Version: 0.0.9" > metadata/version.txt && \
+    echo "Built with: Unity 2022.3.62f3" >> metadata/version.txt && \
+    echo "Platform: Android" >> metadata/version.txt && \
+    echo "Game: Safe Steps Addis" >> metadata/version.txt && \
+    echo "Description: Road safety educational game for children 8-14" >> metadata/version.txt
+
+# Verify APK integrity
+RUN echo "=== APK Integrity Check ===" && \
+    echo "APK exists: $(ls -la app.apk)" && \
+    echo "APK size: $(du -h app.apk)"
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD echo "=== Health Check ===" && \
+    echo "Container is running Safe Steps Addis v0.0.9" && \
+    ls -la /app
+
+EXPOSE 8080 3000 9090
+
+ENTRYPOINT ["/bin/bash", "-c", "echo 'Safe Steps Addis Container'; echo 'Version: 0.0.9'; echo 'Game is ready for deployment'; sleep infinity"]

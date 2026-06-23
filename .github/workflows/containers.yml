@@ -33,17 +33,14 @@ jobs:
           find apk -type f -name "*.apk" | head -10
           echo "=== APK Details ==="
           ls -la apk/ || echo "No APK files found"
-      - name: Setup Docker BuildKit
-        run: |
-          echo "{"buildkit" : {"standalone": {"insecure-entitlements" : ["network.host"]}} }" > ~/.docker/config.json
       - name: Build and Push AP APK Container
         run: |
-          cd apk
-          APK_NAME=$(ls *.apk | head -1)
+          APK_NAME=$(ls apk/*.apk | head -1)
+          APK_NAME=$(basename "$APK_NAME")
           if [ -n "$APK_NAME" ]; then
             echo "Building container with APK: $APK_NAME"
-            docker build -f /home/agih/Desktop/sgame/images/Dockerfile.apk . -t sgame/app:${{ github.event.inputs.version }} --build-arg APK_NAME="$APK_NAME"
-            docker tag sgame/app:${{ github.event.inputs.version }} sgame/app:latest
+            docker build -f ${{ github.workspace }}/images/Dockerfile.apk ${{ github.workspace }} -t ghcr.io/${{ github.repository_owner }}/sgame:${{ github.event.inputs.version }} --build-arg APK_NAME="$APK_NAME"
+            docker tag ghcr.io/${{ github.repository_owner }}/sgame:${{ github.event.inputs.version }} ghcr.io/${{ github.repository_owner }}/sgame:latest
             echo "Docker images built successfully"
             docker images | grep sgame
           else
@@ -54,17 +51,14 @@ jobs:
           DOCKER_BUILDKIT: 1
       - name: Authenticate to GitHub Container Registry
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker login ghcr.io -u ${{ github.actor }} --password-stdin <<< "${{ secrets.GITHUB_TOKEN }}"
       - name: Push Container Images
         run: |
+          docker push ghcr.io/${{ github.repository_owner }}/sgame:${{ github.event.inputs.version }}
+          docker push ghcr.io/${{ github.repository_owner }}/sgame:latest
           if [ "${{ github.event.inputs.tag }}" != "" ]; then
-            docker push sgame/app:${{ github.event.inputs.version }}
-            docker push sgame/app:latest
-            docker tag sgame/app:${{ github.event.inputs.version }} sgame/app:${{ github.event.inputs.tag }}
-            docker push sgame/app:${{ github.event.inputs.tag }}
-          else
-            docker push sgame/app:${{ github.event.inputs.version }}
-            docker push sgame/app:latest
+            docker tag ghcr.io/${{ github.repository_owner }}/sgame:${{ github.event.inputs.version }} ghcr.io/${{ github.repository_owner }}/sgame:${{ github.event.inputs.tag }}
+            docker push ghcr.io/${{ github.repository_owner }}/sgame:${{ github.event.inputs.tag }}
           fi
       - name: Create Container Registry Release
         uses: ncipollo/release-action@v1
@@ -75,8 +69,8 @@ jobs:
             ## Container Images for Safe Steps Addis v${{ github.event.inputs.version }}
 
             ### Images Built
-            - `sgame/app:${{ github.event.inputs.version }}` (version-specific)
-            - `sgame/app:latest` (latest tag)
+            - `ghcr.io/${{ github.repository_owner }}/sgame:${{ github.event.inputs.version }}` (version-specific)
+            - `ghcr.io/${{ github.repository_owner }}/sgame:latest` (latest tag)
 
             ### APK Details
             - Built with Unity ${{ env.UNITY_VERSION }}
@@ -85,8 +79,8 @@ jobs:
 
             ### Usage
             ```bash
-            docker pull sgame/app:${{ github.event.inputs.version }}
-            docker run -p 8080:8080 sgame/app:${{ github.event.inputs.version }}
+            docker pull ghcr.io/${{ github.repository_owner }}/sgame:${{ github.event.inputs.version }}
+            docker run -p 8080:8080 ghcr.io/${{ github.repository_owner }}/sgame:${{ github.event.inputs.version }}
             ```
           draft: false
           prerelease: false
